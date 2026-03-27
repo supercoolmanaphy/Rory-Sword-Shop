@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rory's Sword Shop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .product {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      text-decoration: none;
+      color: black;
+      display: block;
+    }
+
+    .product:hover {
+      transform: scale(1.05);
+    }
+
+    .product img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .product h3 {
+      margin: 10px 0 5px;
+    }
+
+    .product p {
+      margin: 5px 0;
+    }
+
+    button {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: darkgreen;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Rory's Sword Shop
+  </header>
+
+  <div class="container">
+    <h2>Available Products</h2>
+
+    <div class="products">
+      
+      <a href="product1.html" class="product">
+        <img src="images/sword1.jpg" alt="Bronze Short Sword">
+        <h3>Bronze Short Sword</h3>
+        <p>$150.00</p>
+      </a>
+
+      <a href="product2.html" class="product">
+        <img src="images/sword2.jpg" alt="Bronze Arrowheads">
+        <h3>Bronze Arrowheads - 5</h3>
+        <p>$50.00</p>
+      </a>
+
+      <a href="product3.html" class="product">
+        <img src="images/sword3.jpg" alt="Bronze Knife">
+        <h3>Bronze Knife</h3>
+        <p>$75.00</p>
+      </a>
+
+      <a href="product4.html" class="product">
+        <img src="images/sword4.jpg" alt="Bronze Axe Head">
+        <h3>Bronze Axe Head</h3>
+        <p>$75.00</p>
+      </a>
+
+    </div>
+  </div>
+
+</body>
+</html>
