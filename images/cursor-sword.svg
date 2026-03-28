@@ -1,20 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <!-- Drop shadow for visibility on any background -->
-  <filter id="shadow">
-    <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.7)"/>
-  </filter>
-
-  <!-- Blade (silver steel) pointing upper-right, tip at (43,5) -->
-  <!-- Blade polygon: narrow near tip, slightly wider at guard -->
-  <polygon
-    points="43,5 40,9 19,30 22,27"
-    fill="url(#bladeGrad)"
-    filter="url(#shadow)"
-  />
-
   <!-- Blade gradient: bright tip to silver -->
   <defs>
-    <linearGradient id="bladeGrad" x1="43" y1="5" x2="19" y2="30" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bladeGrad" x1="5" y1="5" x2="31" y2="25" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="30%" stop-color="#e0e0e0"/>
       <stop offset="100%" stop-color="#a0a0a0"/>
@@ -30,27 +17,31 @@
     </linearGradient>
   </defs>
 
-  <!-- Blade edge highlight -->
-  <line x1="43" y1="5" x2="20" y2="28"
-    stroke="rgba(255,255,255,0.85)" stroke-width="0.7" stroke-linecap="round"/>
+  <!-- Blade (silver steel) pointing upper-left, tip at (5,5) -->
+  <!-- Blade polygon: thicker than original for visibility -->
+  <polygon
+    points="5,5 9,6 31,25 24,32"
+    fill="url(#bladeGrad)"
+  />
 
-  <!-- Crossguard (gold, perpendicular to blade at blade/handle junction ~(21,27)) -->
-  <line x1="14" y1="21" x2="28" y2="35"
-    stroke="url(#guardGrad)" stroke-width="5" stroke-linecap="round"
-    filter="url(#shadow)"/>
+  <!-- Blade edge highlight -->
+  <line x1="5" y1="5" x2="30" y2="24"
+    stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Crossguard (gold, perpendicular to blade at blade/handle junction) -->
+  <line x1="34" y1="21" x2="20" y2="35"
+    stroke="url(#guardGrad)" stroke-width="5" stroke-linecap="round"/>
 
   <!-- Handle (leather-wrapped brown) -->
-  <line x1="20" y1="28" x2="8" y2="40"
-    stroke="url(#handleGrad)" stroke-width="4.5" stroke-linecap="round"
-    filter="url(#shadow)"/>
+  <line x1="28" y1="28" x2="40" y2="40"
+    stroke="url(#handleGrad)" stroke-width="4.5" stroke-linecap="round"/>
 
   <!-- Handle wrap ridges -->
-  <line x1="18.5" y1="30.5" x2="15" y2="33.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
-  <line x1="16" y1="33.5" x2="12.5" y2="36.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
-  <line x1="13.5" y1="36.5" x2="10" y2="39" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="29.5" y1="30.5" x2="33" y2="33.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="32" y1="33.5" x2="35.5" y2="36.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="34.5" y1="36.5" x2="38" y2="39" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" stroke-linecap="round"/>
 
   <!-- Pommel (gold ball at end of handle) -->
-  <circle cx="6.5" cy="41.5" r="3.8"
-    fill="url(#guardGrad)" stroke="#8B6914" stroke-width="0.8"
-    filter="url(#shadow)"/>
+  <circle cx="41.5" cy="41.5" r="3.8"
+    fill="url(#guardGrad)" stroke="#8B6914" stroke-width="0.8"/>
 </svg>
