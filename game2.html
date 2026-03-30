@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="images/sword5.jpg">
+  <title>Knight's Quest – Rory's Sword Shop</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #1a1a2e;
+      color: white;
+    }
+
+    header {
+      background: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #222;
+    }
+
+    .back { text-decoration: none; color: #aaa; font-size: 16px; }
+    .back:hover { color: white; }
+
+    #game-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    #canvas {
+      border: 3px solid #555;
+      border-radius: 8px;
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .controls-hint {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    /* ---- Chest Modal ---- */
+    #chest-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #chest-modal.hidden { display: none; }
+
+    .modal-box {
+      background: #2a1a0a;
+      border: 3px solid #8a5a20;
+      border-radius: 12px;
+      padding: 28px 32px;
+      min-width: 380px;
+      max-width: 500px;
+      box-shadow: 0 0 40px rgba(218,165,32,0.35);
+    }
+
+    .modal-box h3 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      color: #daa520;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .chest-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(218,165,32,0.25);
+    }
+
+    .chest-item-icon { font-size: 30px; line-height: 1; }
+    .chest-item-info { flex: 1; }
+    .chest-item-info strong { display: block; color: #eee; font-size: 15px; }
+    .chest-item-info span   { font-size: 12px; color: #999; }
+
+    .chest-item-take {
+      background: #5a3a10;
+      color: #daa520;
+      border: 1px solid #8a5a20;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .chest-item-take:hover:not(:disabled) { background: #7a4a18; }
+    .chest-item-take:disabled { opacity: 0.38; }
+
+    .modal-btns {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+
+    .modal-btns button {
+      padding: 10px 22px;
+      border-radius: 6px;
+      border: none;
+      font-size: 15px;
+    }
+
+    #take-all-btn { background: #daa520; color: #1a1a0a; font-weight: bold; }
+    #take-all-btn:hover { background: #f0b830; }
+    #close-modal-btn { background: #444; color: white; }
+    #close-modal-btn:hover { background: #555; }
+  </style>
+</head>
+<body>
+
+<header>Rory's Sword Shop</header>
+
+<div class="nav-bar">
+  <a href="index.html" class="back">← Back to Shop</a>
+  <span style="color:#aaa;font-size:16px;">⚔️ Knight's Quest</span>
+</div>
+
+<div id="game-wrapper">
+  <canvas id="canvas" width="1200" height="700"></canvas>
+  <p class="controls-hint">WASD / Arrow Keys · Click to navigate · E to interact with chest · 1–5 select hotbar slot</p>
+</div>
+
+<div id="chest-modal" class="hidden">
+  <div class="modal-box">
+    <h3>🗝️ Chest Contents</h3>
+    <div id="chest-items-list"></div>
+    <div class="modal-btns">
+      <button id="take-all-btn">Take All</button>
+      <button id="close-modal-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="cursor.js"></script>
+<script>
+// ================================================================
+//  KNIGHT'S QUEST  –  pixel-art top-down RPG
+// ================================================================
+
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// ── dimensions ──────────────────────────────────────────────────
+const TILE     = 40;          // pixels per tile
+const COLS     = 30;          // 1200 / 40
+const ROWS     = 16;          // 640  / 40
+const GAME_H   = ROWS * TILE; // 640  px  (playfield)
+const HOTBAR_H = 60;          // px   (below playfield)
+
+// ── tile-type constants ─────────────────────────────────────────
+const T = Object.freeze({
+  FLOOR:   0,   // walkable wood
+  WALL:    1,   // stone wall
+  DOOR_R:  2,   // right-side door  (room 0 → 1)
+  DOOR_L:  3,   // left-side  door  (room 1 → 0)
+  COBBLE:  4,   // walkable cobblestone
+  GRASS:   5,   // walkable grass
+  BARREL:  6,   // blocked prop
+  SHELF:   7,   // blocked shelf
+  CHEST_C: 8,   // closed chest  (interactive)
+  CHEST_O: 9,   // open chest
+  BED_TL:  10,  // bed – top-left
+  BED_TR:  11,  // bed – top-right
+  BED_BL:  12,  // bed – bottom-left
+  BED_BR:  13,  // bed – bottom-right
+  TREE:    14,  // blocked tree
+  WELL_TL: 15,  // well (drawn from TL; others just block)
+  WELL_TR: 16,
+  WELL_BL: 17,
+  WELL_BR: 18,
+  FENCE:   19,  // border fence / wall
+  SIGN:    20,  // sign post
+  STALL_L: 21,  // market stall left
+  STALL_R: 22,  // market stall right
+});
+
+const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS]);
+
+// ── short aliases for map building ──────────────────────────────
+const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
+        COBBLE:C, GRASS:G, BARREL:B, SHELF:S,
+        CHEST_C:CC, BED_TL:BTL, BED_TR:BTR, BED_BL:BBL, BED_BR:BBR,
+        TREE:TR, WELL_TL:WTL, WELL_TR:WTR, WELL_BL:WBL, WELL_BR:WBR,
+        FENCE:Z, SIGN:SG, STALL_L:SL, STALL_R:SR } = T;
+
+// ── room definitions ─────────────────────────────────────────────
+const ROOMS = [
+
+  // ── Room 0 : Dusty Medieval Storeroom ──────────────────────────
+  {
+    name: 'Storeroom',
+    bgColor: '#110a04',
+    map: [
+      [W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W],
+      [W, S, S, S, S, S, S, S, S, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, S, S, S, S, S, S, S, S, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, B, B, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, DR],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, DR],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,CC, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F,BTL,BTR, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F,BBL,BBR, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W],
+      [W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W],
+    ],
+    playerSpawn:  { x: 3,  y: 8 },
+    chestTile:    { x: 19, y: 10 },
+    entryFromR:   { x: 27, y: 7 },   // arrival position when coming back from room 1
+  },
+
+  // ── Room 1 : Village Square ────────────────────────────────────
+  {
+    name: 'Village Square',
+    bgColor: '#3a6e3a',
+    map: [
+      [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
+      [ Z, G, G, G, G, G,TR, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G,TR, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, C, C, C, C, C, C, C, C, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [DL, G, G, G, G, G, G, G, G, G, C, G, G,WTL,WTR, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [DL, G, G, G, G, G, G, G, G, G, C, G, G,WBL,WBR, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C,SG, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, C, G, G, G, G, G, G,SL,SR, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G,TR, G, G, G, G, G, C, C, C, C, C, C, C, C, C, C, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
+      [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
+    ],
+    playerSpawn:  { x: 2, y: 7 },
+    chestTile:    null,
+    entryFromL:   { x: 2, y: 7 },    // arrival position when coming from room 0
+  },
+];
+
+// ── chest item catalogue ─────────────────────────────────────────
+const CHEST_ITEMS = [
+  { id:'sword',  name:'Rusty Sword',   icon:'⚔️',  desc:'An old but still sharp sword',   taken:false },
+  { id:'bread',  name:'Stale Bread',   icon:'🍞',  desc:'Still edible… maybe',             taken:false },
+  { id:'coins',  name:'Gold Coins',    icon:'💰',  desc:'A handful of gold coins',          taken:false },
+  { id:'potion', name:'Health Potion', icon:'🧪',  desc:'Restores vitality in a pinch',    taken:false },
+];
+
+// ── game state ───────────────────────────────────────────────────
+let roomIdx    = 0;
+let chestOpen  = false;
+let modalOpen  = false;
+
+const player = {
+  tileX: 3, tileY: 8,
+  pxX: 3*TILE, pxY: 8*TILE,
+  targetX: 3, targetY: 8,
+  facing: 'down',
+  path: [],            // queued tiles (mouse-click pathfinding)
+  walkTimer: 0,        // 0..WALK_DUR while mid-tile
+  walkFrame: 0,        // 0 or 1 (leg animation toggle)
+  moving: false,
+};
+const WALK_DUR = 0.13; // 130 ms per tile — feels natural for tile-based movement
+
+const inventory    = [null, null, null, null, null];
+let   selectedSlot = 0;
+
+// held keys
+const keys = {};
+
+// transition (fade between rooms)
+const fade = { active:false, alpha:0, phase:'out', targetRoom:0, spawnX:0, spawnY:0 };
+
+let lastTime = 0;
+
+// ================================================================
+//  DRAWING HELPERS
+// ================================================================
+
+function px(col) { return col * TILE; }
+function py(row) { return row * TILE; }
+
+// fill a rectangle with pixel-perfect integer coords
+function fr(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+// ── tile drawing ─────────────────────────────────────────────────
+function drawTile(type, col, row) {
+  const x = px(col), y = py(row);
+  switch (type) {
+
+    // ─ wood floor ────────────────────────────────────────────────
+    case T.FLOOR: {
+      fr(x, y, TILE, TILE, '#3e2610');
+      // plank lines
+      fr(x, y+13, TILE, 1, '#2e1c0a');
+      fr(x, y+26, TILE, 1, '#2e1c0a');
+      // grain
+      fr(x+8,  y+4,  2, 8, '#4a2e14');
+      fr(x+22, y+16, 2, 6, '#4a2e14');
+      fr(x+32, y+3,  1, 5, '#4a2e14');
+      break;
+    }
+
+    // ─ stone wall ────────────────────────────────────────────────
+    case T.WALL: {
+      fr(x, y, TILE, TILE, '#5a5650');
+      // mortar
+      fr(x,    y+13, TILE, 2, '#3a3630');
+      fr(x,    y+27, TILE, 2, '#3a3630');
+      fr(x+20, y,    2, 13, '#3a3630');
+      fr(x+10, y+15, 2, 12, '#3a3630');
+      fr(x+30, y+15, 2, 12, '#3a3630');
+      fr(x+20, y+29, 2, 11, '#3a3630');
+      // stone highlight
+      fr(x+1,  y+1,  18, 1, '#706860');
+      fr(x+21, y+1,  18, 1, '#706860');
+      fr(x+1,  y+15, 8,  1, '#706860');
+      fr(x+21, y+15, 8,  1, '#706860');
+      break;
+    }
+
+    // ─ fence (village border) ────────────────────────────────────
+    case T.FENCE: {
+      fr(x, y, TILE, TILE, '#2a2820');
+      fr(x+2, y+2, TILE-4, TILE-4, '#4a4840');
+      fr(x+8,  y,  8, 10, '#2a2820');
+      fr(x+24, y,  8, 10, '#2a2820');
+      fr(x+8,  y+TILE-10, 8, 10, '#2a2820');
+      fr(x+24, y+TILE-10, 8, 10, '#2a2820');
+      break;
+    }
+
+    // ─ barrel ────────────────────────────────────────────────────
+    case T.BARREL: {
+      const bx=x+8, by=y+4, bw=24, bh=32;
+      fr(bx+2, by,      bw-4, 5,    '#8a5a28'); // top cap
+      fr(bx,   by+5,    bw,   bh-10,'#6e401a'); // body
+      fr(bx+2, by+bh-5, bw-4, 5,    '#8a5a28'); // bottom cap
+      // staves
+      fr(bx+7,  by, 2, bh, '#5a3010');
+      fr(bx+15, by, 2, bh, '#5a3010');
+      // bands
+      fr(bx, by+9,    bw, 3, '#555');
+      fr(bx, by+bh-12,bw, 3, '#555');
+      break;
+    }
+
+    // ─ shelf ─────────────────────────────────────────────────────
+    case T.SHELF: {
+      fr(x, y, TILE, 10, '#4a3020');    // back-wall mount
+      fr(x, y+10, TILE, 7, '#7c4a20'); // shelf plank
+      fr(x+TILE/2-1, y+17, 2, 14, '#5a3010'); // bracket
+      // items on shelf
+      fr(x+4,  y+17, 9, 10, '#c8a060'); // pot
+      fr(x+16, y+16, 6, 11, '#a06040'); // jar
+      fr(x+26, y+17, 10, 9, '#7a5030'); // book
+      break;
+    }
+
+    // ─ chest (closed) ────────────────────────────────────────────
+    case T.CHEST_C: {
+      const cx=x+4, cy=y+8, cw=32, ch=24;
+      fr(cx,      cy,      cw,  ch,  '#7a4a10'); // box
+      fr(cx,      cy,      cw,  10,  '#8a5a20'); // lid
+      // metal corners
+      fr(cx,       cy,       4, 4, '#aaa');
+      fr(cx+cw-4,  cy,       4, 4, '#aaa');
+      fr(cx,       cy+ch-4,  4, 4, '#aaa');
+      fr(cx+cw-4,  cy+ch-4,  4, 4, '#aaa');
+      // lock
+      fr(cx+cw/2-4, cy+2, 8, 7, '#daa520');
+      // [E] hint
+      ctx.fillStyle = 'rgba(255,255,180,0.75)';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('[E]', x+TILE/2, y+TILE-4);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ chest (open) ──────────────────────────────────────────────
+    case T.CHEST_O: {
+      const cx=x+4, cy=y+14, cw=32, ch=18;
+      fr(cx, cy,    cw, ch,  '#7a4a10'); // box
+      fr(cx, cy-12, cw, 10,  '#8a5a20'); // lid (open, tilted back)
+      fr(cx+2, cy+2, cw-4, ch-4, '#2a1408'); // interior dark
+      fr(cx,       cy,       4, 4, '#aaa');
+      fr(cx+cw-4,  cy,       4, 4, '#aaa');
+      break;
+    }
+
+    // ─ bed quarters ──────────────────────────────────────────────
+    case T.BED_TL: {
+      fr(x, y, TILE, TILE, '#5a3010');       // frame
+      fr(x+3, y+3, TILE-3, TILE-3, '#ddd'); // pillow
+      fr(x+3, y+3, TILE-3, 3, '#bbb');      // pillow shadow
+      break;
+    }
+    case T.BED_TR: {
+      fr(x, y, TILE, TILE, '#5a3010');
+      fr(x, y+3, TILE-3, TILE-3, '#ddd');
+      fr(x, y+3, TILE-3, 3, '#bbb');
+      fr(x+TILE-6, y, 6, TILE, '#6a3818'); // headboard post
+      break;
+    }
+    case T.BED_BL: {
+      fr(x, y, TILE, TILE, '#5a3010');
+      fr(x+3, y, TILE-3, TILE-3, '#5a72a0'); // blanket
+      fr(x+3, y, TILE-3, 4, '#7090c0');
+      break;
+    }
+    case T.BED_BR: {
+      fr(x, y, TILE, TILE, '#5a3010');
+      fr(x, y, TILE-3, TILE-3, '#5a72a0');
+      fr(x, y, TILE-3, 4, '#7090c0');
+      fr(x+TILE-6, y+TILE-18, 6, 18, '#6a3818'); // footboard post
+      break;
+    }
+
+    // ─ door (right wall) ─────────────────────────────────────────
+    case T.DOOR_R: {
+      fr(x, y, TILE, TILE, '#5a5650');
+      fr(x+4, y+2, TILE-8, TILE-4, '#7a4a15');
+      fr(x+7, y+5, 10, 13, '#5a3010');
+      fr(x+7, y+20, 10, 12, '#5a3010');
+      fr(x+4, y+TILE/2-3, 5, 5, '#daa520'); // handle
+      // arrow
+      ctx.fillStyle = '#ffee44';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▶', x+TILE/2+6, y+TILE/2+5);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ door (left wall) ──────────────────────────────────────────
+    case T.DOOR_L: {
+      fr(x, y, TILE, TILE, '#5a5650');
+      fr(x+4, y+2, TILE-8, TILE-4, '#7a4a15');
+      fr(x+7, y+5, 10, 13, '#5a3010');
+      fr(x+7, y+20, 10, 12, '#5a3010');
+      fr(x+TILE-9, y+TILE/2-3, 5, 5, '#daa520');
+      ctx.fillStyle = '#ffee44';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('◀', x+TILE/2-6, y+TILE/2+5);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ cobblestone ───────────────────────────────────────────────
+    case T.COBBLE: {
+      fr(x, y, TILE, TILE, '#7a7870');
+      fr(x+1,  y+1,  18, 18, '#8a8880');
+      fr(x+21, y+1,  18, 18, '#8a8880');
+      fr(x+1,  y+21, 18, 18, '#8a8880');
+      fr(x+21, y+21, 18, 18, '#8a8880');
+      // stone highlight
+      fr(x+2,  y+2,  16, 1, '#9a9890');
+      fr(x+22, y+2,  16, 1, '#9a9890');
+      fr(x+2,  y+22, 16, 1, '#9a9890');
+      fr(x+22, y+22, 16, 1, '#9a9890');
+      break;
+    }
+
+    // ─ grass ─────────────────────────────────────────────────────
+    case T.GRASS: {
+      fr(x, y, TILE, TILE, '#3a7230');
+      fr(x+5,  y+8,  6, 3, '#4a8238');
+      fr(x+22, y+24, 5, 3, '#4a8238');
+      fr(x+30, y+10, 4, 3, '#4a8238');
+      fr(x+14, y+32, 7, 3, '#2e6028');
+      break;
+    }
+
+    // ─ tree ──────────────────────────────────────────────────────
+    case T.TREE: {
+      fr(x, y, TILE, TILE, '#3a7230'); // grass base
+      // trunk
+      fr(x+16, y+24, 8, 14, '#5a3010');
+      // canopy (dark green circles via rects to keep pixel art feel)
+      fr(x+6,  y+4,  28, 22, '#1e5418');
+      fr(x+4,  y+8,  32, 18, '#1e5418');
+      fr(x+8,  y+2,  24, 24, '#1e5418');
+      // highlight
+      fr(x+10, y+6,  12, 8, '#2a6a20');
+      break;
+    }
+
+    // ─ well (only TL is drawn; TR/BL/BR are transparent) ─────────
+    case T.WELL_TL: {
+      const wx=x, wy=y, ws=TILE*2;
+      fr(wx,    wy,    ws, ws,   '#6e6a62'); // stone base
+      fr(wx+4,  wy+4,  ws-8, ws-8, '#7e7a72');
+      // well hole
+      fr(wx+14, wy+14, 12, 12, '#1a1208');
+      fr(wx+15, wy+15, 10, 10, '#0a0804');
+      // wooden crossbar posts
+      fr(wx+10, wy+6,  4, 22, '#5a3010');
+      fr(wx+ws-14, wy+6, 4, 22, '#5a3010');
+      fr(wx+10, wy+6,  ws-20, 4, '#5a3010'); // top bar
+      // rope
+      ctx.strokeStyle = '#c8a060';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(wx+ws/2, wy+10);
+      ctx.lineTo(wx+ws/2, wy+14);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      break;
+    }
+    case T.WELL_TR:
+    case T.WELL_BL:
+    case T.WELL_BR:
+      // drawn entirely by WELL_TL
+      break;
+
+    // ─ sign ──────────────────────────────────────────────────────
+    case T.SIGN: {
+      fr(x, y, TILE, TILE, '#3a7230');   // grass base
+      fr(x+18, y+18, 4, 20, '#5a3010'); // post
+      fr(x+6,  y+8,  28, 18, '#8a5a20'); // board
+      fr(x+7,  y+9,  26, 16, '#9a6a30');
+      ctx.fillStyle = '#2a1008';
+      ctx.font = 'bold 7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('MARKET', x+TILE/2, y+18);
+      ctx.fillText('SQUARE', x+TILE/2, y+26);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ market stall ──────────────────────────────────────────────
+    case T.STALL_L: {
+      fr(x, y+12, TILE, TILE-12, '#7a4a10');
+      fr(x, y+10, TILE, 6, '#9a6030');   // counter
+      fr(x, y,    TILE, 12, '#cc2222');  // awning
+      for (let i=2; i<TILE; i+=8) fr(x+i, y, 4, 12, '#eee');
+      // goods on counter
+      fr(x+4,  y+16, 8, 6, '#daa520');
+      fr(x+16, y+15, 6, 7, '#cc4444');
+      break;
+    }
+    case T.STALL_R: {
+      fr(x, y+12, TILE, TILE-12, '#7a4a10');
+      fr(x, y+10, TILE, 6, '#9a6030');
+      fr(x, y,    TILE, 12, '#cc2222');
+      for (let i=2; i<TILE; i+=8) fr(x+i, y, 4, 12, '#eee');
+      fr(x+6,  y+16, 8, 6, '#6080cc');
+      fr(x+20, y+15, 6, 7, '#50aa50');
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
+// ── knight sprite ────────────────────────────────────────────────
+function drawKnight(px, py, facing, walkFrame) {
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(cx, py+TILE-4, 10, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // leg offset for walking animation
+  const lOff = walkFrame === 0 ? 2 : -2;
+
+  // ─ legs
+  if (facing === 'left' || facing === 'right') {
+    // side view: single stride
+    fr(cx-5, cy+6, 5, 10, '#484040');
+    fr(cx+1,  cy+6+(walkFrame===0?-3:3), 4, 10, '#484040');
+  } else {
+    fr(cx-7, cy+6+lOff,  5, 10, '#484040');
+    fr(cx+2, cy+6-lOff,  5, 10, '#484040');
+  }
+
+  // ─ body / tabard
+  fr(cx-9, cy-5, 18, 14, '#8a8888');   // chain-mail base
+  fr(cx-7, cy-3, 14, 10, '#aaaaaa');   // chest plate
+  // cross on tabard
+  fr(cx-1, cy-3, 3, 10, '#cc2222');
+  fr(cx-7, cy+1, 14, 3, '#cc2222');
+
+  // ─ shield (left side) & sword (right side)
+  if (facing === 'right') {
+    fr(cx+9,  cy-2, 4, 12, '#c8a060'); // sword blade
+    fr(cx+9,  cy+8, 4,  2, '#888');    // guard
+  } else if (facing === 'left') {
+    fr(cx-6,  cy-4, 8, 12, '#6688aa'); // shield
+    fr(cx-7,  cy-5, 10, 2, '#7799bb');
+  } else {
+    fr(cx+9,  cy,   4, 10, '#c8a060'); // sword right
+    fr(cx-12, cy,   7, 10, '#6688aa'); // shield left
+    fr(cx-13, cy-1, 9, 2,  '#7799bb');
+  }
+
+  // ─ head
+  fr(cx-6, cy-15, 12, 12, '#e0c898'); // face
+  // eyes / facing indicator
+  if (facing === 'down') {
+    fr(cx-3, cy-10, 2, 2, '#333');
+    fr(cx+1, cy-10, 2, 2, '#333');
+  } else if (facing === 'up') {
+    fr(cx-3, cy-13, 2, 2, '#333');
+    fr(cx+1, cy-13, 2, 2, '#333');
+  } else if (facing === 'right') {
+    fr(cx+2, cy-11, 2, 2, '#333');
+  } else {
+    fr(cx-4, cy-11, 2, 2, '#333');
+  }
+
+  // ─ helmet
+  fr(cx-7, cy-20, 14, 8, '#666');
+  fr(cx-6, cy-21, 12, 3, '#555');       // top ridge
+  fr(cx-5, cy-14, 10, 3, '#555');       // visor slit
+  fr(cx-2, cy-14, 1, 3, '#888');
+  fr(cx+1, cy-14, 1, 3, '#888');
+}
+
+// ── hotbar ───────────────────────────────────────────────────────
+function drawHotbar() {
+  const slotSize = 52;
+  const gap = 4;
+  const hx = Math.round((canvas.width - (5*slotSize + 4*gap)) / 2);
+  const hy = GAME_H + Math.round((HOTBAR_H - slotSize) / 2);
+
+  // background bar
+  fr(0, GAME_H, canvas.width, HOTBAR_H, '#1a1410');
+  fr(0, GAME_H, canvas.width, 2, '#333');
+
+  for (let i = 0; i < 5; i++) {
+    const sx = hx + i*(slotSize+gap);
+    const sy = hy;
+    const sel = i === selectedSlot;
+
+    // slot background
+    fr(sx, sy, slotSize, slotSize, sel ? '#5a4010' : '#2e2010');
+    // slot border
+    ctx.strokeStyle = sel ? '#daa520' : '#554030';
+    ctx.lineWidth   = sel ? 2 : 1;
+    ctx.strokeRect(sx+0.5, sy+0.5, slotSize-1, slotSize-1);
+    ctx.lineWidth = 1;
+
+    // slot number
+    ctx.fillStyle = sel ? '#daa520' : '#666';
+    ctx.font = '9px monospace';
+    ctx.fillText(i+1, sx+3, sy+11);
+
+    // item
+    const item = inventory[i];
+    if (item) {
+      ctx.font = '26px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.icon, sx+slotSize/2, sy+slotSize-8);
+      ctx.textAlign = 'left';
+      // item name tooltip on selected
+      if (sel) {
+        ctx.fillStyle = '#daa520';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.name, canvas.width/2, GAME_H+HOTBAR_H-4);
+        ctx.textAlign = 'left';
+      }
+    }
+  }
+}
+
+// ── room-name overlay ────────────────────────────────────────────
+function drawRoomName(name) {
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(10, 10, 200, 28);
+  ctx.fillStyle = '#daa520';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText(name, 20, 29);
+}
+
+// ── interaction hint ─────────────────────────────────────────────
+function drawHint(msg) {
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  const w = ctx.measureText(msg).width + 20;
+  const hx = (canvas.width - w) / 2;
+  ctx.fillRect(hx, GAME_H - 34, w, 24);
+  ctx.fillStyle = '#ffe';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(msg, canvas.width/2, GAME_H - 16);
+  ctx.textAlign = 'left';
+}
+
+// ================================================================
+//  WALKABILITY / PATHFINDING
+// ================================================================
+
+function isWalkable(room, col, row) {
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
+  return WALKABLE.has(room.map[row][col]);
+}
+
+// BFS – returns array of {x,y} steps (not including start, including end)
+function bfs(room, fromX, fromY, toX, toY) {
+  if (!isWalkable(room, toX, toY)) return [];
+  const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
+  const parent  = Array.from({length: ROWS}, () => new Array(COLS).fill(null));
+  const queue   = [{x:fromX, y:fromY}];
+  visited[fromY][fromX] = true;
+
+  while (queue.length) {
+    const {x, y} = queue.shift();
+    if (x === toX && y === toY) {
+      // reconstruct
+      const path = [];
+      let cur = {x:toX, y:toY};
+      while (cur.x !== fromX || cur.y !== fromY) {
+        path.unshift(cur);
+        cur = parent[cur.y][cur.x];
+      }
+      return path;
+    }
+    for (const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+      const nx=x+dx, ny=y+dy;
+      if (isWalkable(room, nx, ny) && !visited[ny][nx]) {
+        visited[ny][nx] = true;
+        parent[ny][nx] = {x, y};
+        queue.push({x:nx, y:ny});
+      }
+    }
+  }
+  return [];
+}
+
+// ================================================================
+//  ROOM TRANSITION
+// ================================================================
+
+function startTransition(targetRoom, spawnX, spawnY) {
+  fade.active     = true;
+  fade.phase      = 'out';
+  fade.alpha      = 0;
+  fade.targetRoom = targetRoom;
+  fade.spawnX     = spawnX;
+  fade.spawnY     = spawnY;
+  player.path     = [];
+}
+
+function applyTransition() {
+  roomIdx     = fade.targetRoom;
+  player.tileX  = fade.spawnX;
+  player.tileY  = fade.spawnY;
+  player.targetX = fade.spawnX;
+  player.targetY = fade.spawnY;
+  player.pxX    = fade.spawnX * TILE;
+  player.pxY    = fade.spawnY * TILE;
+  player.moving = false;
+  player.path   = [];
+}
+
+// ================================================================
+//  CHEST INTERACTION
+// ================================================================
+
+function isAdjacentToChest() {
+  const room = ROOMS[roomIdx];
+  if (!room.chestTile) return false;
+  const {x:cx, y:cy} = room.chestTile;
+  const dx = Math.abs(player.tileX - cx);
+  const dy = Math.abs(player.tileY - cy);
+  return (dx + dy) === 1;
+}
+
+function openChestModal() {
+  modalOpen = true;
+  canvas.blur();
+  const list = document.getElementById('chest-items-list');
+  list.innerHTML = '';
+  CHEST_ITEMS.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'chest-item';
+    row.innerHTML = `
+      <span class="chest-item-icon">${item.icon}</span>
+      <div class="chest-item-info">
+        <strong>${item.name}</strong>
+        <span>${item.desc}</span>
+      </div>
+      <button class="chest-item-take" ${item.taken?'disabled':''} data-id="${item.id}">
+        ${item.taken ? 'Taken' : 'Take'}
+      </button>`;
+    list.appendChild(row);
+  });
+  document.getElementById('chest-modal').classList.remove('hidden');
+
+  // per-item take
+  list.querySelectorAll('.chest-item-take').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const item = CHEST_ITEMS.find(i => i.id === id);
+      if (!item || item.taken) return;
+      if (addToInventory(item)) {
+        item.taken = true;
+        btn.disabled = true;
+        btn.textContent = 'Taken';
+      }
+    });
+  });
+}
+
+function closeChestModal() {
+  modalOpen = false;
+  document.getElementById('chest-modal').classList.add('hidden');
+  canvas.focus();
+}
+
+function addToInventory(item) {
+  const slot = inventory.indexOf(null);
+  if (slot === -1) return false; // no space
+  inventory[slot] = { icon: item.icon, name: item.name };
+  return true;
+}
+
+function takeAllItems() {
+  CHEST_ITEMS.forEach(item => {
+    if (!item.taken) {
+      if (addToInventory(item)) item.taken = true;
+    }
+  });
+  // refresh modal rows
+  const list = document.getElementById('chest-items-list');
+  list.querySelectorAll('.chest-item-take').forEach(btn => {
+    const id = btn.dataset.id;
+    const item = CHEST_ITEMS.find(i => i.id === id);
+    if (item && item.taken) { btn.disabled = true; btn.textContent = 'Taken'; }
+  });
+}
+
+// ================================================================
+//  INPUT
+// ================================================================
+
+// Direction map: key → [dx, dy, facingName]
+const DIRS = {
+  w: [0,-1,'up'],   arrowup:    [0,-1,'up'],
+  s: [0, 1,'down'], arrowdown:  [0, 1,'down'],
+  a: [-1,0,'left'], arrowleft:  [-1,0,'left'],
+  d: [ 1,0,'right'],arrowright: [ 1,0,'right'],
+};
+
+document.addEventListener('keydown', e => {
+  const lk = e.key.toLowerCase();
+  keys[lk] = true;
+
+  // Immediate single-tap movement (fires even for brief key presses)
+  const dir = DIRS[lk];
+  if (dir && !player.moving && player.path.length === 0 && !modalOpen && !fade.active) {
+    const [dx, dy, face] = dir;
+    player.facing = face;
+    const nx = player.tileX + dx;
+    const ny = player.tileY + dy;
+    if (isWalkable(ROOMS[roomIdx], nx, ny)) {
+      player.targetX   = nx;
+      player.targetY   = ny;
+      player.moving    = true;
+      player.walkTimer = 0;
+      player.path      = [];
+    }
+  }
+
+  // inventory slot selection
+  if (e.key >= '1' && e.key <= '5') {
+    selectedSlot = parseInt(e.key) - 1;
+  }
+
+  // interact with chest
+  if ((e.key === 'e' || e.key === 'E') && !modalOpen) {
+    const room = ROOMS[roomIdx];
+    if (room.chestTile && isAdjacentToChest()) {
+      // mark chest tile as open
+      const {x:cx, y:cy} = room.chestTile;
+      room.map[cy][cx] = T.CHEST_O;
+      chestOpen = true;
+      openChestModal();
+    }
+  }
+
+  if (e.key === 'Escape' && modalOpen) closeChestModal();
+
+  // prevent page scroll with arrow/space
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+canvas.addEventListener('click', e => {
+  if (modalOpen || fade.active) return;
+  const rect = canvas.getBoundingClientRect();
+  // Scale mouse coords to match internal canvas resolution
+  const mx = (e.clientX - rect.left) * (canvas.width  / rect.width);
+  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+
+  // Hotbar region — slot selection
+  if (my >= GAME_H) {
+    const slotSz = 52, gapSz = 4;
+    const hxBar = Math.round((canvas.width - (5*slotSz + 4*gapSz)) / 2);
+    const hyBar = GAME_H + Math.round((HOTBAR_H - slotSz) / 2);
+    for (let i=0; i<5; i++) {
+      const sx = hxBar + i*(slotSz+gapSz);
+      if (mx>=sx && mx<sx+slotSz && my>=hyBar && my<hyBar+slotSz) { selectedSlot=i; }
+    }
+    return;
+  }
+
+  // Game area clicks
+  const clickCol = Math.floor(mx / TILE);
+  const clickRow = Math.floor(my / TILE);
+  const room = ROOMS[roomIdx];
+
+  // Click directly on chest tile while adjacent → open chest
+  if (room.chestTile) {
+    const {x:cx, y:cy} = room.chestTile;
+    if (clickCol===cx && clickRow===cy && isAdjacentToChest()) {
+      room.map[cy][cx] = T.CHEST_O;
+      chestOpen = true;
+      openChestModal();
+      return;
+    }
+  }
+
+  // Navigate to clicked tile via BFS
+  if (!player.moving && player.path.length === 0) {
+    player.path = bfs(room, player.tileX, player.tileY, clickCol, clickRow);
+  } else {
+    // Replace path mid-walk (re-route from current target tile)
+    player.path = bfs(room, player.targetX, player.targetY, clickCol, clickRow);
+  }
+});
+
+// modal buttons
+document.getElementById('take-all-btn').addEventListener('click', takeAllItems);
+document.getElementById('close-modal-btn').addEventListener('click', closeChestModal);
+
+// ================================================================
+//  UPDATE
+// ================================================================
+
+function update(dt) {
+  if (modalOpen) return;
+  if (fade.active) {
+    if (fade.phase === 'out') {
+      fade.alpha = Math.min(1, fade.alpha + dt * 5);
+      if (fade.alpha >= 1) { applyTransition(); fade.phase = 'in'; }
+    } else {
+      fade.alpha = Math.max(0, fade.alpha - dt * 4);
+      if (fade.alpha <= 0) fade.active = false;
+    }
+    return;
+  }
+
+  // ── movement ──────────────────────────────────────────────────
+  if (player.moving) {
+    player.walkTimer += dt;
+    const t = Math.min(1, player.walkTimer / WALK_DUR);
+    const startX = player.tileX * TILE;
+    const startY = player.tileY * TILE;
+    const endX   = player.targetX * TILE;
+    const endY   = player.targetY * TILE;
+    player.pxX   = startX + (endX - startX) * t;
+    player.pxY   = startY + (endY - startY) * t;
+
+    if (t >= 1) {
+      player.tileX  = player.targetX;
+      player.tileY  = player.targetY;
+      player.pxX    = endX;
+      player.pxY    = endY;
+      player.moving = false;
+      player.walkFrame = 1 - player.walkFrame;
+
+      // check door
+      const tile = ROOMS[roomIdx].map[player.tileY][player.tileX];
+      if (tile === T.DOOR_R && roomIdx === 0) {
+        const sp = ROOMS[1].entryFromL;
+        startTransition(1, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_L && roomIdx === 1) {
+        const sp = ROOMS[0].entryFromR;
+        startTransition(0, sp.x, sp.y);
+        return;
+      }
+
+      // next path step
+      if (player.path.length > 0) {
+        const next = player.path.shift();
+        player.targetX = next.x;
+        player.targetY = next.y;
+        player.facing  = next.x > player.tileX ? 'right'
+                       : next.x < player.tileX ? 'left'
+                       : next.y > player.tileY ? 'down' : 'up';
+        player.moving     = true;
+        player.walkTimer  = 0;
+      }
+    }
+    return; // don't process keyboard while animating
+  }
+
+  // ── keyboard input (when idle) ────────────────────────────────
+  if (player.path.length > 0) {
+    const next = player.path.shift();
+    player.targetX = next.x;
+    player.targetY = next.y;
+    player.facing  = next.x > player.tileX ? 'right'
+                   : next.x < player.tileX ? 'left'
+                   : next.y > player.tileY ? 'down' : 'up';
+    player.moving    = true;
+    player.walkTimer = 0;
+    return;
+  }
+
+  // WASD / arrow keys
+  for (const [key, [dx, dy, face]] of Object.entries(DIRS)) {
+    if (!keys[key]) continue;
+    player.facing = face;
+    const nx = player.tileX + dx;
+    const ny = player.tileY + dy;
+    if (isWalkable(ROOMS[roomIdx], nx, ny)) {
+      player.targetX   = nx;
+      player.targetY   = ny;
+      player.moving    = true;
+      player.walkTimer = 0;
+      player.path      = [];
+    }
+    break; // only one direction per frame
+  }
+}
+
+// ================================================================
+//  RENDER
+// ================================================================
+
+function render() {
+  const room = ROOMS[roomIdx];
+
+  // ── background ──────────────────────────────────────────────
+  fr(0, 0, canvas.width, GAME_H, room.bgColor);
+
+  // ── tiles ───────────────────────────────────────────────────
+  for (let row=0; row<ROWS; row++) {
+    for (let col=0; col<COLS; col++) {
+      drawTile(room.map[row][col], col, row);
+    }
+  }
+
+  // ── ambient dust overlay for storeroom ─────────────────────
+  if (roomIdx === 0) {
+    ctx.fillStyle = 'rgba(60,30,10,0.18)';
+    ctx.fillRect(0, 0, canvas.width, GAME_H);
+  }
+
+  // ── player ──────────────────────────────────────────────────
+  drawKnight(player.pxX, player.pxY, player.facing, player.walkFrame);
+
+  // ── interaction hint ────────────────────────────────────────
+  if (!modalOpen && isAdjacentToChest()) {
+    drawHint('Press [E] or click the chest to open it');
+  }
+
+  // ── door hints ──────────────────────────────────────────────
+  if (!modalOpen) {
+    const tile = room.map[player.tileY]?.[player.tileX];
+    if (tile === T.DOOR_R) drawHint('Enter → Village Square');
+    if (tile === T.DOOR_L) drawHint('Enter ← Storeroom');
+  }
+
+  // ── hotbar ──────────────────────────────────────────────────
+  drawHotbar();
+
+  // ── room name ───────────────────────────────────────────────
+  drawRoomName(room.name);
+
+  // ── fade overlay ────────────────────────────────────────────
+  if (fade.active && fade.alpha > 0) {
+    ctx.fillStyle = `rgba(0,0,0,${fade.alpha})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+// ================================================================
+//  MAIN LOOP
+// ================================================================
+
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ── start ────────────────────────────────────────────────────────
+canvas.setAttribute('tabindex', '0');
+canvas.focus();
+player.pxX = player.tileX * TILE;
+player.pxY = player.tileY * TILE;
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
