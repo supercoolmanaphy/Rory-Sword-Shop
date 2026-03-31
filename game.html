@@ -163,6 +163,7 @@
     let targets = [], particles = [];
     let gameRunning = false;
     let spawnInterval = null, animFrame = null;
+    let damageFlash = 0; // red border flash intensity (1 = full, 0 = none)
 
     function randomBetween(a, b) { return Math.random() * (b - a) + a; }
 
@@ -342,6 +343,7 @@
           if (!t.isFire && gameRunning) {
             lives = Math.max(0, lives - 1);
             livesEl.textContent = lives;
+            damageFlash = 1.0;
             if (lives <= 0) endGame();
           }
           return false;
@@ -404,6 +406,19 @@
       });
 
       particles.forEach(drawParticle);
+
+      // ── damage flash (red border) ──────────────────────────────
+      if (damageFlash > 0) {
+        const alpha = damageFlash * 0.75;
+        ctx.save();
+        ctx.strokeStyle = `rgba(220,0,0,${alpha})`;
+        ctx.lineWidth = 28;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = `rgba(220,0,0,${Math.min(0.18, alpha * 0.22)})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        damageFlash = Math.max(0, damageFlash - 0.045);
+      }
     }
 
     function gameLoop() {
@@ -416,6 +431,7 @@
     function startGame() {
       score = 0; lives = 3;
       targets = []; particles = [];
+      damageFlash = 0;
       scoreEl.textContent = score;
       livesEl.textContent = lives;
       updateDiffDisplay();
@@ -471,6 +487,7 @@
             spawnParticles(t.x, t.y, '#ff4500');
             lives = Math.max(0, lives - 1);
             livesEl.textContent = lives;
+            damageFlash = 1.0;
             if (lives <= 0) endGame();
           } else {
             spawnParticles(t.x, t.y, t.color);
