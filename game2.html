@@ -613,10 +613,10 @@ const ROOMS = [
       [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G,WA,WA, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
       [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G,WA,WA, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
       [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G,WA,WA, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
-      // row 7 – cobblestone path, bridge over river
-      [DL, C, C, C, C, C, C, C, C, C, C, C, C, C,BR,BR, C, C, C, C, C, C, C, C, C, C, C, C, C, Z],
+      // row 7 – cobblestone path, bridge over river; DR at col 28 → Jester's Castle
+      [DL, C, C, C, C, C, C, C, C, C, C, C, C, C,BR,BR, C, C, C, C, C, C, C, C, C, C, C, C,DR, Z],
       // row 8
-      [DL, C, C, C, C, C, C, C, C, C, C, C, C, C,BR,BR, C, C, C, C, C, C, C, C, C, C, C, C, C, Z],
+      [DL, C, C, C, C, C, C, C, C, C, C, C, C, C,BR,BR, C, C, C, C, C, C, C, C, C, C, C, C,DR, Z],
       // rows 9-14 – grass on both sides, river
       [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G,WA,WA, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
       [ Z, G, G, G, G, G, G, G, G, G, G, G, G, G,WA,WA, G, G, G, G, G, G, G, G, G, G, G, G, G, Z],
@@ -627,9 +627,10 @@ const ROOMS = [
       // row 15 – fence bottom
       [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
     ],
-    playerSpawn:          { x: 1, y: 7 },
-    chestTile:            null,
-    entryFromRowanoak:    { x: 1, y: 7 },
+    playerSpawn:             { x: 1, y: 7 },
+    chestTile:               null,
+    entryFromRowanoak:       { x: 1, y: 7 },
+    entryFromJestersCastle:  { x: 27, y: 7 },
   },
 
   // ── Room 5 : Forest ────────────────────────────────────────────
@@ -972,6 +973,49 @@ const ROOMS = [
     chestTile:      null,
     entryFromCave1: { x: 23, y: 1 },
   },
+
+  // ── Room 13 : Jester's Castle ──────────────────────────────────
+  {
+    name: "Jester's Castle",
+    bgColor: '#2a3a2a',
+    map: [
+      // row 0 – top fence
+      [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
+      // row 1 – approach + left castle wall (col 12) + arc (col 20)
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z],
+      // row 2
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z],
+      // row 3 – arc shifts to col 21
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z],
+      // row 4
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z],
+      // row 5 – arc at col 22; building top (W) at cols 15-19
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, W, W, W, W, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 6 – building side walls; F (floor) inside cols 16-18
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, W, F, F, F, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 7 – path entry (DL); cobble cols 1-12; building entrance open (F at 15); clerk at col 17
+      [DL, C, C, C, C, C, C, C, C, C, C, C, C, G, G, F, F, F, F, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 8 – same as row 7
+      [DL, C, C, C, C, C, C, C, C, C, C, C, C, G, G, F, F, F, F, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 9 – building side walls; F inside
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, W, F, F, F, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 10 – arc at col 22; building bottom (W) at cols 15-19
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, W, W, W, W, W, G, G, Z, G, G, G, G, G, G, Z],
+      // row 11 – arc shifts back to col 21
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z],
+      // row 12
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z],
+      // row 13 – arc back to col 20
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z],
+      // row 14
+      [ Z, G, G, G, G, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, Z, G, G, G, G, G, G, G, G, Z],
+      // row 15 – bottom fence
+      [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
+    ],
+    playerSpawn:         { x: 1, y: 7 },
+    chestTile:           null,
+    entryFromRiverside:  { x: 1, y: 7 },
+  },
 ]; // ── chest item catalogue ─────────────────────────────────────────
 const CHEST_ITEMS = [
   { id:'sword',       name:'Rusty Sword',   icon:'⚔️',  desc:'An old but still sharp sword',              taken:false },
@@ -998,7 +1042,11 @@ let shrubMessage   = null; // { text, timer } – hint message
 let caveDarknessMsg = null; // { text, timer } – "too dark" message
 
 // ── Special Delivery quest state ────────────────────────────────
-let specialDeliveryQuest = 'inactive'; // 'inactive' | 'active' | 'complete'
+let specialDeliveryQuest = 'inactive'; // 'inactive' | 'active' | 'delivered'
+let guardsStepped = false; // whether bridge guards have stepped aside
+// pig follow state
+let pigPoops   = []; // { x, y, room, timer } – temporary droppings
+let pigPoopTimer = 0; // counts up to 30 s while pig is following
 
 const player = {
   tileX: 12, tileY: 8,
@@ -1091,10 +1139,14 @@ const NPCS = [
     name: 'Jaque',
     tileX: 20, tileY: 12,
     room: 7,
-    dialog: ["Bonjour! I tend to the animals here.", "This pig is my best friend. Very smart, this one!"],
+    dialog: [
+      "Bonjour! I tend to the animals here. This pig is my best friend — very smart, this one!",
+      "Oh, but I have a big favour to ask. I need this pig delivered to the Special Delivery Clerk at Jester's Castle, just across the river. Would you help?",
+    ],
     outfitColor: '#6a4a80',
     hairColor: '#3a2060',
     accessory: null,
+    questGiver: 'special_delivery',
   },
   {
     id: 'pig',
@@ -1106,26 +1158,27 @@ const NPCS = [
     hairColor: '#ffb6c1',
     accessory: null,
     isPig: true,
+    following: false,
+    facing: 'down',
   },
   {
     id: 'delivery_clerk',
     name: 'Delivery Clerk',
-    tileX: 20, tileY: 10,
-    room: 3,
+    tileX: 17, tileY: 7,
+    room: 13,
     dialog: [
-      "I have an urgent package that needs to cross the river!",
-      "The bridge guards are strict, but I've already notified them about a Special Delivery.",
-      "If you help me deliver it, just tell them you're on the Special Delivery — they'll let you through!"
+      "Welcome to Jester's Castle! I am the Special Delivery Clerk here.",
+      "I've been expecting a very special delivery from across the river…",
     ],
     outfitColor: '#8a6a30',
     hairColor: '#4a3010',
     accessory: null,
-    questGiver: 'special_delivery',
+    questTarget: 'special_delivery',
   },
   {
     id: 'bridge_guard_1',
     name: 'Bridge Guard',
-    tileX: 12, tileY: 7,
+    tileX: 13, tileY: 7,
     room: 4,
     dialog: [],
     outfitColor: '#445566',
@@ -1137,7 +1190,7 @@ const NPCS = [
   {
     id: 'bridge_guard_2',
     name: 'Bridge Guard',
-    tileX: 12, tileY: 8,
+    tileX: 13, tileY: 8,
     room: 4,
     dialog: [],
     outfitColor: '#445566',
@@ -1168,6 +1221,7 @@ const ROOM_IMAGES = {
   10: 'images/cave5.png',
   11: 'images/cave3.png',
   12: 'images/cave4.png',
+  13: 'images/darktower.png',
 };
 
 const NPC_IMAGES = {
@@ -2497,6 +2551,9 @@ function drawPigNPC(npc) {
   const ny = npc.tileY * TILE;
   const cx = nx + TILE / 2;
   const cy = ny + TILE / 2;
+  const facing  = npc.facing || 'down';
+  const walkFrame = npc.following ? (Math.floor(Date.now() / 200) % 2) : 0;
+  const lOff = walkFrame ? 2 : -2; // leg alternation offset
 
   // shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -2504,51 +2561,106 @@ function drawPigNPC(npc) {
   ctx.ellipse(cx, ny + TILE - 5, 10, 3, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // body
-  ctx.fillStyle = '#ffb6c1';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy + 4, 13, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (facing === 'left' || facing === 'right') {
+    // ── side view ────────────────────────────────────────────────
+    const d = facing === 'right' ? 1 : -1; // direction multiplier
 
-  // head
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - 6, 10, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
+    // body (horizontal oval)
+    ctx.fillStyle = '#ffb6c1';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 2, 13, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  // snout
-  ctx.fillStyle = '#ff9aab';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - 2, 6, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
+    // head (in front of body)
+    ctx.beginPath();
+    ctx.ellipse(cx + d * 12, cy - 1, 8, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  // nostrils
-  ctx.fillStyle = '#cc6677';
-  ctx.beginPath(); ctx.arc(cx - 2, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + 2, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+    // snout
+    ctx.fillStyle = '#ff9aab';
+    ctx.beginPath();
+    ctx.ellipse(cx + d * 18, cy + 1, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  // eyes
-  ctx.fillStyle = '#333';
-  ctx.beginPath(); ctx.arc(cx - 5, cy - 9, 1.5, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx + 5, cy - 9, 1.5, 0, Math.PI * 2); ctx.fill();
+    // nostril
+    ctx.fillStyle = '#cc6677';
+    ctx.beginPath();
+    ctx.arc(cx + d * 20, cy + 1, 1.5, 0, Math.PI * 2);
+    ctx.fill();
 
-  // ears
-  ctx.fillStyle = '#ff9aab';
-  ctx.beginPath(); ctx.ellipse(cx - 8, cy - 13, 3, 5, -0.3, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx + 8, cy - 13, 3, 5, 0.3, 0, Math.PI * 2); ctx.fill();
+    // eye
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(cx + d * 13, cy - 4, 1.5, 0, Math.PI * 2);
+    ctx.fill();
 
-  // legs (4 legs for a proper pig)
-  fr(cx - 9, cy + 10, 4, 7, '#ffb6c1');
-  fr(cx - 3, cy + 10, 4, 7, '#ffb6c1');
-  fr(cx + 3, cy + 10, 4, 7, '#ffb6c1');
-  fr(cx + 9, cy + 10, 4, 7, '#ffb6c1');
+    // ear
+    ctx.fillStyle = '#ff9aab';
+    ctx.beginPath();
+    ctx.ellipse(cx + d * 8, cy - 9, 3, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-  // curly tail
-  ctx.strokeStyle = '#ff9aab';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(cx + 13, cy + 2, 4, 0, Math.PI * 1.5, false);
-  ctx.stroke();
-  ctx.lineWidth = 1;
+    // legs (animated walking pairs)
+    fr(cx - 4, cy + 8 + lOff,  4, 7, '#ffb6c1');
+    fr(cx + 2, cy + 8 - lOff,  4, 7, '#ffb6c1');
+    fr(cx + 8, cy + 8 + lOff,  4, 7, '#ffb6c1');
+
+    // curly tail at rear
+    ctx.strokeStyle = '#ff9aab';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx - d * 13, cy + 3, 4, 0, Math.PI * 1.5, facing === 'right');
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+  } else {
+    // ── front / back view ────────────────────────────────────────
+    // body
+    ctx.fillStyle = '#ffb6c1';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + 4, 13, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // head
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 6, 10, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // snout
+    ctx.fillStyle = '#ff9aab';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - 2, 6, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // nostrils
+    ctx.fillStyle = '#cc6677';
+    ctx.beginPath(); ctx.arc(cx - 2, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 2, cy - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+
+    // eyes
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.arc(cx - 5, cy - 9, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 5, cy - 9, 1.5, 0, Math.PI * 2); ctx.fill();
+
+    // ears
+    ctx.fillStyle = '#ff9aab';
+    ctx.beginPath(); ctx.ellipse(cx - 8, cy - 13, 3, 5, -0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 8, cy - 13, 3, 5,  0.3, 0, Math.PI * 2); ctx.fill();
+
+    // legs (4 legs, alternating when walking)
+    fr(cx - 9, cy + 10 + lOff, 4, 7, '#ffb6c1');
+    fr(cx - 3, cy + 10 - lOff, 4, 7, '#ffb6c1');
+    fr(cx + 3, cy + 10 + lOff, 4, 7, '#ffb6c1');
+    fr(cx + 9, cy + 10 - lOff, 4, 7, '#ffb6c1');
+
+    // curly tail
+    ctx.strokeStyle = '#ff9aab';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx + 13, cy + 2, 4, 0, Math.PI * 1.5, false);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  }
 
   // name label
   ctx.font = '8px monospace';
@@ -2588,7 +2700,7 @@ function openNpcDialog(npc) {
     if (specialDeliveryQuest === 'inactive') {
       document.getElementById('npc-text-sidebar').textContent =
         'Halt! None shall cross this bridge without proper authorization.\n\nOnly those on Special Delivery business may pass.';
-    } else if (specialDeliveryQuest === 'active') {
+    } else if (specialDeliveryQuest === 'active' && !guardsStepped) {
       document.getElementById('npc-text-sidebar').textContent =
         'Special Delivery? Right, we were informed.\n\nStep aside, let the courier through!';
       // Both guards step aside
@@ -2597,7 +2709,7 @@ function openNpcDialog(npc) {
           g.tileY = g.asideY;
         }
       }
-      specialDeliveryQuest = 'complete';
+      guardsStepped = true;
     } else {
       document.getElementById('npc-text-sidebar').textContent =
         'Welcome back, traveller. Safe travels across the bridge.';
@@ -2630,23 +2742,52 @@ function openNpcDialog(npc) {
       acceptBtn.textContent = '📦 Accept the Special Delivery quest';
       acceptBtn.addEventListener('click', () => {
         specialDeliveryQuest = 'active';
+        // pig starts following player
+        const pig = NPCS.find(n => n.id === 'pig');
+        if (pig) pig.following = true;
         document.getElementById('npc-text-sidebar').textContent =
-          'Wonderful! Hurry to the bridge — the guards know about the delivery. Thank you!';
+          'Wonderful! The pig will follow you. Hurry to the bridge — the guards know about the delivery. Thank you!';
         shopDiv.innerHTML = '';
       });
       shopDiv.appendChild(acceptBtn);
     } else if (specialDeliveryQuest === 'active') {
       document.getElementById('npc-text-sidebar').textContent =
-        "You haven't crossed yet! Please hurry — the bridge guards are expecting you.";
+        "The pig is following you! Take it to the Special Delivery Clerk at Jester's Castle, across the bridge.";
     } else {
       document.getElementById('npc-text-sidebar').textContent =
-        "Thank you so much for making the delivery! You're a true hero.";
+        "Thank you so much for delivering the pig! You're a true hero.";
     }
     document.getElementById('npc-dialog-sidebar').classList.remove('hidden');
     return;
   }
 
-  document.getElementById('npc-text-sidebar').textContent = npc.dialog.join('\n\n');
+  // ── Quest-target dialog (delivery clerk receives the pig) ──────
+  if (npc.questTarget === 'special_delivery') {
+    if (specialDeliveryQuest === 'active') {
+      const pig = NPCS.find(n => n.id === 'pig');
+      if (pig && pig.following) {
+        // complete the delivery
+        pig.following = false;
+        pig.room = 13;
+        pig.tileX = 18; pig.tileY = 7;
+        pig.facing = 'down';
+        specialDeliveryQuest = 'delivered';
+        document.getElementById('npc-text-sidebar').textContent =
+          "Oh my! The pig is here at last! Wonderful — Jaque will be so pleased. Thank you, courier! You've done a great service to Jester's Castle!";
+      } else {
+        document.getElementById('npc-text-sidebar').textContent =
+          "Welcome to Jester's Castle! I am still waiting for the Special Delivery from across the river... Have you brought the pig?";
+      }
+    } else if (specialDeliveryQuest === 'delivered') {
+      document.getElementById('npc-text-sidebar').textContent =
+        "Thank you again for delivering that fine pig! It has settled in beautifully here at Jester's Castle.";
+    } else {
+      document.getElementById('npc-text-sidebar').textContent = npc.dialog.join('\n\n');
+    }
+    document.getElementById('npc-dialog-sidebar').classList.remove('hidden');
+    return;
+  }
+
 
   if (npc.shop && npc.shop.length > 0) {
     const hr = document.createElement('hr');
@@ -2778,6 +2919,13 @@ function applyTransition() {
   player.pxY    = fade.spawnY * TILE;
   player.moving = false;
   player.path   = [];
+  // ── move following pig to the new room ──────────────────────
+  const pig = NPCS.find(n => n.id === 'pig');
+  if (pig && pig.following) {
+    pig.room  = roomIdx;
+    pig.tileX = player.tileX;
+    pig.tileY = player.tileY;
+  }
   updateRegionImage();
 }
 
@@ -3075,6 +3223,20 @@ function update(dt) {
     if (caveDarknessMsg.timer <= 0) caveDarknessMsg = null;
   }
 
+  // ── pig poop timer ─────────────────────────────────────────────
+  const _pig = NPCS.find(n => n.id === 'pig');
+  if (_pig && _pig.following) {
+    pigPoopTimer += dt;
+    if (pigPoopTimer >= 30) {
+      pigPoopTimer = 0;
+      pigPoops.push({ x: _pig.tileX, y: _pig.tileY, room: _pig.room, timer: 1 });
+    }
+  }
+  for (let _i = pigPoops.length - 1; _i >= 0; _i--) {
+    pigPoops[_i].timer -= dt;
+    if (pigPoops[_i].timer <= 0) pigPoops.splice(_i, 1);
+  }
+
   if (fade.active) {
     if (fade.phase === 'out') {
       fade.alpha = Math.min(1, fade.alpha + dt * 5);
@@ -3109,8 +3271,19 @@ function update(dt) {
       footsteps.push({ x: stepCx + fOx, y: stepCy + fOy, age: 0, facing: player.facing });
       if (footsteps.length > 12) footsteps.shift();
 
+      // ── pig follow: snap pig to the tile the player just vacated ──
+      const _prevTileX = player.tileX;
+      const _prevTileY = player.tileY;
+
       player.tileX  = player.targetX;
       player.tileY  = player.targetY;
+
+      const pig = NPCS.find(n => n.id === 'pig');
+      if (pig && pig.following && pig.room === roomIdx) {
+        pig.tileX  = _prevTileX;
+        pig.tileY  = _prevTileY;
+        pig.facing = player.facing;
+      }
       player.pxX    = endX;
       player.pxY    = endY;
       player.moving = false;
@@ -3161,6 +3334,16 @@ function update(dt) {
       if (tile === T.DOOR_L && roomIdx === 4) {
         const sp = ROOMS[3].entryFromRiverside;
         startTransition(3, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_R && roomIdx === 4) {
+        const sp = ROOMS[13].entryFromRiverside;
+        startTransition(13, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_L && roomIdx === 13) {
+        const sp = ROOMS[4].entryFromJestersCastle;
+        startTransition(4, sp.x, sp.y);
         return;
       }
       if (tile === T.DOOR_FL && roomIdx === 2) {
@@ -3323,6 +3506,15 @@ function render() {
       for (let col = 0; col < COLS; col++) {
         if (room.map[row][col] === T.WATER) {
           const wx = col * TILE, wy = row * TILE;
+          // top water tile: the tile above is not water — clip to prevent
+          // the animation strip overflowing into non-water tiles above
+          const isTopTile = row === 0 || room.map[row - 1][col] !== T.WATER;
+          if (isTopTile) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(wx, wy, TILE, TILE);
+            ctx.clip();
+          }
           // animated wave strips flowing downward
           const wOff1 = ((t + col * 0.4 + row * 0.3) % 1) * TILE;
           const wOff2 = ((t * 0.7 + col * 0.5 + row * 0.2 + 0.5) % 1) * TILE;
@@ -3337,6 +3529,7 @@ function render() {
           ctx.fillStyle = `rgba(180,220,255,${fAlpha})`;
           const fx = wx + 4 + ((Math.sin(t + col * 0.7) * 0.5 + 0.5) * (TILE - 10));
           ctx.fillRect(Math.round(fx), wy + Math.round(wOff1 + 1), 3, 2);
+          if (isTopTile) ctx.restore();
         }
       }
     }
@@ -3357,6 +3550,23 @@ function render() {
     ctx.lineWidth = 2;
     ctx.strokeRect(clickTarget.x * TILE + 1, clickTarget.y * TILE + 1, TILE - 2, TILE - 2);
     ctx.lineWidth = 1;
+  }
+
+  // ── pig poops ────────────────────────────────────────────────
+  for (const poop of pigPoops) {
+    if (poop.room !== roomIdx) continue;
+    const px = poop.x * TILE + TILE / 2;
+    const py = poop.y * TILE + TILE / 2 + 6;
+    const alpha = Math.min(1, poop.timer * 2); // fade out in last 0.5 s
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `${TILE - 4}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💩', px, py);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.restore();
   }
 
   // ── NPCs ────────────────────────────────────────────────────
@@ -3565,6 +3775,8 @@ function render() {
     if (tile === T.DOOR_L && roomIdx === 3)     drawHint('Enter ◀ Village Square');
     if (tile === T.DOOR_R && roomIdx === 3)     drawHint('Enter → Riverside Bridge');
     if (tile === T.DOOR_L && roomIdx === 4)     drawHint('Enter ◀ Rowanoak Village');
+    if (tile === T.DOOR_R && roomIdx === 4)     drawHint("Enter → Jester's Castle");
+    if (tile === T.DOOR_L && roomIdx === 13)    drawHint('Enter ◀ Riverside Bridge');
     if (tile === T.DOOR_U) drawHint('Enter ▲ Farmland');
     if (tile === T.DOOR_D) drawHint('Enter ▼ Village Square');
     if (tile === T.DOOR_FL && roomIdx === 2) drawHint('Enter ▲ Forest');
