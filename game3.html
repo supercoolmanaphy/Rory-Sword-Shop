@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="images/sword5.jpg">
+  <title>Monster Battle – Rory's Sword Shop</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #1a1a2e;
+      color: white;
+    }
+
+    header {
+      background: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: #222;
+    }
+
+    .back { text-decoration: none; color: #aaa; font-size: 16px; }
+    .back:hover { color: white; }
+
+    #game-area {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    #canvas {
+      border: 3px solid #555;
+      border-radius: 8px;
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .controls-hint {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header>Rory's Sword Shop</header>
+
+<div class="nav-bar">
+  <a href="index.html" class="back">← Back to Shop</a>
+  <span style="color:#aaa;font-size:16px;">⚔️ Monster Battle</span>
+</div>
+
+<div id="game-area">
+  <div>
+    <canvas id="canvas" width="1200" height="640"></canvas>
+    <p class="controls-hint">WASD / Arrow Keys to move · SPACE to attack</p>
+  </div>
+</div>
+
+<script src="cursor.js"></script>
+<script>
+// ================================================================
+//  MONSTER BATTLE  –  tile-based dungeon RPG
+// ================================================================
+
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// ── dimensions ──────────────────────────────────────────────────
+const TILE   = 40;
+const COLS   = 30;
+const ROWS   = 16;
+const GAME_W = COLS * TILE;  // 1200
+const GAME_H = ROWS * TILE;  // 640
+
+// ── tile types ───────────────────────────────────────────────────
+const T_WALL  = 0;
+const T_FLOOR = 1;
+const T_ROCK  = 2;
+
+// ── helper: filled rect ──────────────────────────────────────────
+function fr(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+
+// ── helper: generate dungeon map ─────────────────────────────────
+function makeMap() {
+  return Array.from({ length: ROWS }, (_, r) =>
+    Array.from({ length: COLS }, (_, c) =>
+      (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) ? T_WALL : T_FLOOR
+    )
+  );
+}
+
+// ── dungeon definitions ──────────────────────────────────────────
+const DUNGEONS = {
+  spider: (() => {
+    const map = makeMap();
+    return { map, bgColor: '#120a1a', floorColor: '#1e1428', wallColor: '#302040' };
+  })(),
+  wizard: (() => {
+    const map = makeMap();
+    // rocks as cover obstacles (blocking fireballs)
+    for (const [c, r] of [[6,9],[11,11],[18,9],[23,11]]) map[r][c] = T_ROCK;
+    return { map, bgColor: '#080a1a', floorColor: '#121828', wallColor: '#202840' };
+  })(),
+  hellhound: (() => {
+    const map = makeMap();
+    return { map, bgColor: '#1a0303', floorColor: '#1e0a0a', wallColor: '#3a1010' };
+  })(),
+};
+
+// ── monster data ─────────────────────────────────────────────────
+const MONSTER_DATA = {
+  spider: {
+    name: 'Giant Spider',
+    maxHp: 50,
+    attackInterval: 3.5,
+    dungeon: 'spider',
+    color: '#2a1a2a',
+  },
+  wizard: {
+    name: 'Dark Wizard',
+    maxHp: 100,
+    attackInterval: 4.5,
+    dungeon: 'wizard',
+    color: '#1a1040',
+  },
+  hellhound: {
+    name: 'Hellhound',
+    maxHp: 75,
+    attackInterval: 3.0,
+    dungeon: 'hellhound',
+    color: '#3a0808',
+  },
+};
+
+// ── game state ───────────────────────────────────────────────────
+// states: 'menu', 'battle', 'win', 'lose'
+let gameState    = 'menu';
+let menuSelected = 0; // 0=spider, 1=wizard, 2=hellhound
+const MENU_KEYS  = ['spider', 'wizard', 'hellhound'];
+
+// ── player ───────────────────────────────────────────────────────
+const WALK_DUR = 0.13;
+const PLAYER_START = { col: 14, row: 12 };
+
+const player = {
+  tileX: PLAYER_START.col,
+  tileY: PLAYER_START.row,
+  pxX:   PLAYER_START.col * TILE,
+  pxY:   PLAYER_START.row * TILE,
+  targetX: PLAYER_START.col,
+  targetY: PLAYER_START.row,
+  facing: 'up',
+  moving: false,
+  walkTimer: 0,
+  walkFrame: 0,
+  hearts: 3,
+  invincible: false,
+  invincibleTimer: 0,
+  trapped: false,
+  trappedTimer: 0,
+};
+
+// ── monster state ────────────────────────────────────────────────
+let monster = {
+  key:  '',
+  name: '',
+  maxHp: 0,
+  hp:    0,
+  attackTimer: 0,
+  hitFlash: 0,
+  // pixel position (drawn at top-center)
+  tileX: 13,
+  tileY: 1,
+};
+
+// ── attack collections ───────────────────────────────────────────
+let cobwebs      = []; // { col, row, phase:'warn'|'active', timer, lifeTimer }
+let fireballs    = []; // { type:'row'|'col', index, dir:'left'|'right'|'top', phase:'warn'|'fire', timer, pos }
+let biteAttacks  = []; // { col, row, phase:'warn'|'bite', timer }
+
+// ── sword slash ──────────────────────────────────────────────────
+let swordAnim      = null; // { col, row, timer }
+let attackCooldown = 0;
+
+// ── footsteps ────────────────────────────────────────────────────
+let footsteps = []; // { x, y, facing, age }
+
+// ── misc ─────────────────────────────────────────────────────────
+let keys           = {};
+let lastTime       = 0;
+let damageFlash    = 0;  // red screen flash when player takes damage
+let currentDungeon = null;
+
+// ── direction map ─────────────────────────────────────────────────
+const DIRS = {
+  w: [0,-1,'up'],   arrowup:    [0,-1,'up'],
+  s: [0, 1,'down'], arrowdown:  [0, 1,'down'],
+  a: [-1,0,'left'], arrowleft:  [-1,0,'left'],
+  d: [ 1,0,'right'],arrowright: [ 1,0,'right'],
+};
+
+// ================================================================
+//  INPUT
+// ================================================================
+
+document.addEventListener('keydown', e => {
+  const lk = e.key.toLowerCase();
+  keys[lk] = true;
+
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(lk)) {
+    e.preventDefault();
+  }
+
+  // ── menu navigation ──────────────────────────────────────────
+  if (gameState === 'menu') {
+    if (lk === 'arrowleft'  || lk === 'a') menuSelected = (menuSelected + 2) % 3;
+    if (lk === 'arrowright' || lk === 'd') menuSelected = (menuSelected + 1) % 3;
+    if (lk === ' ' || lk === 'enter') startBattle(MENU_KEYS[menuSelected]);
+    return;
+  }
+
+  // ── win/lose: any key restarts ────────────────────────────────
+  if (gameState === 'win' || gameState === 'lose') {
+    if (lk === ' ' || lk === 'enter' || lk === 'escape') {
+      gameState = 'menu';
+      menuSelected = 0;
+    }
+    return;
+  }
+
+  // ── battle: immediate single-tap movement ────────────────────
+  if (gameState === 'battle') {
+    const dir = DIRS[lk];
+    if (dir && !player.moving && !player.trapped) {
+      const [dx, dy, face] = dir;
+      player.facing = face;
+      const nx = player.tileX + dx;
+      const ny = player.tileY + dy;
+      if (isWalkable(nx, ny)) {
+        player.targetX   = nx;
+        player.targetY   = ny;
+        player.moving    = true;
+        player.walkTimer = 0;
+      }
+    }
+
+    // attack
+    if (lk === ' ' && attackCooldown <= 0) {
+      doAttack();
+    }
+  }
+});
+
+document.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// ── walkability ──────────────────────────────────────────────────
+function isWalkable(col, row) {
+  if (!currentDungeon) return false;
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
+  const t = currentDungeon.map[row][col];
+  return t === T_FLOOR;
+}
+
+// ================================================================
+//  GAME START / RESET
+// ================================================================
+
+function startBattle(monsterKey) {
+  const data = MONSTER_DATA[monsterKey];
+  monster.key    = monsterKey;
+  monster.name   = data.name;
+  monster.maxHp  = data.maxHp;
+  monster.hp     = data.maxHp;
+  monster.attackTimer = data.attackInterval * 0.5; // first attack sooner
+  monster.hitFlash = 0;
+  monster.tileX = 13;
+  monster.tileY = 1;
+
+  currentDungeon = DUNGEONS[data.dungeon];
+
+  player.tileX  = PLAYER_START.col;
+  player.tileY  = PLAYER_START.row;
+  player.pxX    = PLAYER_START.col * TILE;
+  player.pxY    = PLAYER_START.row * TILE;
+  player.targetX = PLAYER_START.col;
+  player.targetY = PLAYER_START.row;
+  player.facing  = 'up';
+  player.moving  = false;
+  player.walkTimer = 0;
+  player.walkFrame = 0;
+  player.hearts  = 3;
+  player.invincible = false;
+  player.invincibleTimer = 0;
+  player.trapped = false;
+  player.trappedTimer = 0;
+
+  cobwebs     = [];
+  fireballs   = [];
+  biteAttacks = [];
+  footsteps   = [];
+  swordAnim   = null;
+  attackCooldown = 0;
+  damageFlash = 0;
+
+  gameState = 'battle';
+}
+
+// ================================================================
+//  ATTACK – PLAYER
+// ================================================================
+
+function doAttack() {
+  attackCooldown = 0.55;
+  // sword slash animation at player tile (extends slightly forward)
+  const dx = player.facing === 'right' ? 1 : player.facing === 'left' ? -1 : 0;
+  const dy = player.facing === 'down'  ? 1 : player.facing === 'up'   ? -1 : 0;
+  swordAnim = {
+    col:   player.tileX + dx,
+    row:   player.tileY + dy,
+    timer: 0,
+  };
+  // deal damage to monster
+  if (monster.hp > 0) {
+    monster.hp = Math.max(0, monster.hp - 5);
+    monster.hitFlash = 0.4;
+    if (monster.hp <= 0) {
+      setTimeout(() => { gameState = 'win'; }, 400);
+    }
+  }
+}
+
+// ================================================================
+//  ATTACK – MONSTER
+// ================================================================
+
+function triggerMonsterAttack() {
+  const key = monster.key;
+  if (key === 'spider')    spawnCobwebs();
+  else if (key === 'wizard')   spawnFireball();
+  else if (key === 'hellhound') spawnBites();
+}
+
+function spawnCobwebs() {
+  const count = 4 + Math.floor(Math.random() * 3);
+  const attempts = count * 8;
+  let placed = 0;
+  for (let i = 0; i < attempts && placed < count; i++) {
+    const col = 1 + Math.floor(Math.random() * (COLS - 2));
+    const row = 3 + Math.floor(Math.random() * (ROWS - 5));
+    if (currentDungeon.map[row][col] === T_FLOOR) {
+      cobwebs.push({ col, row, phase: 'warn', timer: 0, lifeTimer: 0 });
+      placed++;
+    }
+  }
+}
+
+function spawnFireball() {
+  if (Math.random() < 0.55) {
+    // horizontal: choose a random row in the arena, attack from left or right
+    const row = 2 + Math.floor(Math.random() * (ROWS - 4));
+    const dir = Math.random() < 0.5 ? 'left' : 'right';
+    fireballs.push({ type: 'row', index: row, dir, phase: 'warn', timer: 0 });
+  } else {
+    // vertical: choose a random col, attack from top
+    const col = 1 + Math.floor(Math.random() * (COLS - 2));
+    fireballs.push({ type: 'col', index: col, dir: 'top', phase: 'warn', timer: 0 });
+  }
+}
+
+function spawnBites() {
+  const count = 2 + Math.floor(Math.random() * 3);
+  // spawn around player position
+  const placed = new Set();
+  const attempts = count * 10;
+  let p = 0;
+  for (let i = 0; i < attempts && p < count; i++) {
+    const col = Math.max(1, Math.min(COLS-2, player.tileX + Math.floor(Math.random() * 7) - 3));
+    const row = Math.max(1, Math.min(ROWS-2, player.tileY + Math.floor(Math.random() * 7) - 3));
+    const key2 = `${col},${row}`;
+    if (!placed.has(key2) && currentDungeon.map[row][col] === T_FLOOR) {
+      placed.add(key2);
+      biteAttacks.push({ col, row, phase: 'warn', timer: 0 });
+      p++;
+    }
+  }
+}
+
+// ── check if player tile is protected from fireball ──────────────
+function isProtected(fb) {
+  const map  = currentDungeon.map;
+  const pc   = player.tileX;
+  const pr   = player.tileY;
+  if (fb.type === 'row') {
+    if (pr !== fb.index) return true;
+    if (fb.dir === 'left') {
+      for (let c = 0; c < pc; c++) if (map[pr][c] === T_ROCK) return true;
+    } else {
+      for (let c = pc + 1; c < COLS; c++) if (map[pr][c] === T_ROCK) return true;
+    }
+    return false;
+  } else { // col
+    if (pc !== fb.index) return true;
+    for (let r = 0; r < pr; r++) if (map[r][pc] === T_ROCK) return true;
+    return false;
+  }
+}
+
+// ── player takes damage ──────────────────────────────────────────
+function playerHit() {
+  if (player.invincible) return;
+  player.hearts--;
+  player.invincible = true;
+  player.invincibleTimer = 1.5;
+  damageFlash = 1.0;
+  if (player.hearts <= 0) {
+    setTimeout(() => { gameState = 'lose'; }, 500);
+  }
+}
+
+// ================================================================
+//  UPDATE
+// ================================================================
+
+function update(dt) {
+  if (gameState !== 'battle') return;
+
+  // ── invincibility timer ──────────────────────────────────────
+  if (player.invincible) {
+    player.invincibleTimer -= dt;
+    if (player.invincibleTimer <= 0) {
+      player.invincible = false;
+      player.invincibleTimer = 0;
+    }
+  }
+
+  // ── damage flash ─────────────────────────────────────────────
+  if (damageFlash > 0) damageFlash = Math.max(0, damageFlash - dt * 2.5);
+
+  // ── trap timer ───────────────────────────────────────────────
+  if (player.trapped) {
+    player.trappedTimer -= dt;
+    if (player.trappedTimer <= 0) {
+      player.trapped    = false;
+      player.trappedTimer = 0;
+    }
+  }
+
+  // ── attack cooldown ──────────────────────────────────────────
+  if (attackCooldown > 0) attackCooldown -= dt;
+
+  // ── sword anim ───────────────────────────────────────────────
+  if (swordAnim) {
+    swordAnim.timer += dt;
+    if (swordAnim.timer >= 0.5) swordAnim = null;
+  }
+
+  // ── monster hit flash ────────────────────────────────────────
+  if (monster.hitFlash > 0) monster.hitFlash = Math.max(0, monster.hitFlash - dt * 3);
+
+  // ── footsteps age ────────────────────────────────────────────
+  for (let i = footsteps.length - 1; i >= 0; i--) {
+    footsteps[i].age += dt;
+    if (footsteps[i].age >= 1.2) footsteps.splice(i, 1);
+  }
+
+  // ── player movement ──────────────────────────────────────────
+  if (player.moving) {
+    player.walkTimer += dt;
+    const t = Math.min(1, player.walkTimer / WALK_DUR);
+    player.pxX = player.tileX * TILE + (player.targetX - player.tileX) * TILE * t;
+    player.pxY = player.tileY * TILE + (player.targetY - player.tileY) * TILE * t;
+    if (t >= 1) {
+      // add footstep
+      footsteps.push({
+        x: player.pxX + TILE / 2 + (player.facing === 'right' ? -6 : player.facing === 'left' ? 6 : 0),
+        y: player.pxY + TILE - 6,
+        facing: player.facing,
+        age: 0,
+      });
+      player.tileX     = player.targetX;
+      player.tileY     = player.targetY;
+      player.pxX       = player.tileX * TILE;
+      player.pxY       = player.tileY * TILE;
+      player.moving    = false;
+      player.walkTimer = 0;
+      player.walkFrame = 1 - player.walkFrame;
+
+      // check cobweb on landing
+      checkCobwebCollision();
+    }
+  } else if (!player.trapped) {
+    // continuous key movement
+    for (const [k, [dx, dy, face]] of Object.entries(DIRS)) {
+      if (!keys[k]) continue;
+      player.facing = face;
+      const nx = player.tileX + dx;
+      const ny = player.tileY + dy;
+      if (isWalkable(nx, ny)) {
+        player.targetX   = nx;
+        player.targetY   = ny;
+        player.moving    = true;
+        player.walkTimer = 0;
+      }
+      break;
+    }
+  }
+
+  // ── monster attack timer ──────────────────────────────────────
+  monster.attackTimer -= dt;
+  if (monster.attackTimer <= 0 && monster.hp > 0) {
+    monster.attackTimer = MONSTER_DATA[monster.key].attackInterval;
+    triggerMonsterAttack();
+  }
+
+  // ── update cobwebs ────────────────────────────────────────────
+  for (let i = cobwebs.length - 1; i >= 0; i--) {
+    const cw = cobwebs[i];
+    cw.timer += dt;
+    if (cw.phase === 'warn' && cw.timer >= 1.0) {
+      cw.phase = 'active';
+      cw.timer = 0;
+      cw.lifeTimer = 0;
+    } else if (cw.phase === 'active') {
+      cw.lifeTimer += dt;
+      // check player collision
+      if (player.tileX === cw.col && player.tileY === cw.row) {
+        if (!player.trapped) {
+          player.trapped = true;
+          player.trappedTimer = 2.0;
+          playerHit();
+        }
+      }
+      if (cw.lifeTimer >= 4.5) cobwebs.splice(i, 1);
+    }
+  }
+
+  // ── update fireballs ──────────────────────────────────────────
+  for (let i = fireballs.length - 1; i >= 0; i--) {
+    const fb = fireballs[i];
+    fb.timer += dt;
+    if (fb.phase === 'warn' && fb.timer >= 1.0) {
+      fb.phase = 'fire';
+      fb.timer = 0;
+    } else if (fb.phase === 'fire') {
+      // check player hit
+      if (!isProtected(fb)) {
+        playerHit();
+      }
+      if (fb.timer >= 0.7) fireballs.splice(i, 1);
+    }
+  }
+
+  // ── update bites ──────────────────────────────────────────────
+  for (let i = biteAttacks.length - 1; i >= 0; i--) {
+    const bt = biteAttacks[i];
+    bt.timer += dt;
+    if (bt.phase === 'warn' && bt.timer >= 1.0) {
+      bt.phase = 'bite';
+      bt.timer = 0;
+    } else if (bt.phase === 'bite') {
+      if (player.tileX === bt.col && player.tileY === bt.row) {
+        playerHit();
+      }
+      if (bt.timer >= 0.65) biteAttacks.splice(i, 1);
+    }
+  }
+}
+
+function checkCobwebCollision() {
+  for (const cw of cobwebs) {
+    if (cw.phase === 'active' && cw.col === player.tileX && cw.row === player.tileY) {
+      if (!player.trapped) {
+        player.trapped = true;
+        player.trappedTimer = 2.0;
+        playerHit();
+      }
+      break;
+    }
+  }
+}
+
+// ================================================================
+//  DRAW HELPERS
+// ================================================================
+
+function drawKnight(px, py, facing, walkFrame) {
+  const cx = px + TILE / 2;
+  const cy = py + TILE / 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(cx, py + TILE - 4, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const lOff = walkFrame === 0 ? 2 : -2;
+
+  if (facing === 'left' || facing === 'right') {
+    fr(cx - 5, cy + 6, 5, 10, '#484040');
+    fr(cx + 1, cy + 6 + (walkFrame === 0 ? -3 : 3), 4, 10, '#484040');
+  } else {
+    fr(cx - 7, cy + 6 + lOff,  5, 10, '#484040');
+    fr(cx + 2, cy + 6 - lOff,  5, 10, '#484040');
+  }
+
+  fr(cx - 9, cy - 5, 18, 14, '#8a8888');
+  fr(cx - 7, cy - 3, 14, 10, '#aaaaaa');
+  fr(cx - 1, cy - 3, 3, 10, '#cc2222');
+  fr(cx - 7, cy + 1, 14, 3, '#cc2222');
+
+  if (facing === 'right') {
+    fr(cx + 9, cy - 2, 4, 12, '#c8a060');
+    fr(cx + 9, cy + 8, 4,  2, '#888');
+  } else if (facing === 'left') {
+    fr(cx - 6, cy - 4, 8, 12, '#6688aa');
+    fr(cx - 7, cy - 5, 10, 2, '#7799bb');
+  } else {
+    fr(cx + 9,  cy,    4, 10, '#c8a060');
+    fr(cx - 12, cy,    7, 10, '#6688aa');
+    fr(cx - 13, cy - 1, 9,  2, '#7799bb');
+  }
+
+  fr(cx - 6, cy - 15, 12, 12, '#e0c898');
+  if (facing === 'down') {
+    fr(cx - 3, cy - 10, 2, 2, '#333');
+    fr(cx + 1, cy - 10, 2, 2, '#333');
+  } else if (facing === 'up') {
+    fr(cx - 3, cy - 13, 2, 2, '#333');
+    fr(cx + 1, cy - 13, 2, 2, '#333');
+  } else if (facing === 'right') {
+    fr(cx + 2, cy - 11, 2, 2, '#333');
+  } else {
+    fr(cx - 4, cy - 11, 2, 2, '#333');
+  }
+
+  fr(cx - 7, cy - 20, 14, 8, '#666');
+  fr(cx - 6, cy - 21, 12, 3, '#555');
+  fr(cx - 5, cy - 14, 10, 3, '#555');
+  fr(cx - 2, cy - 14, 1, 3, '#888');
+  fr(cx + 1, cy - 14, 1, 3, '#888');
+}
+
+function drawFootsteps() {
+  for (const fp of footsteps) {
+    const alpha = Math.max(0, 1 - fp.age / 1.2) * 0.4;
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    const rot = fp.facing === 'up'   ?  Math.PI
+              : fp.facing === 'down' ?  0
+              : fp.facing === 'left' ?  Math.PI / 2
+              :                        -Math.PI / 2;
+    ctx.save();
+    ctx.translate(Math.round(fp.x), Math.round(fp.y));
+    ctx.rotate(rot);
+    ctx.beginPath(); ctx.ellipse(0, 0, 3, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -5, 2, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── tile drawing ────────────────────────────────────────────────
+function drawTile(t, col, row) {
+  const x = col * TILE;
+  const y = row * TILE;
+  const dng = currentDungeon;
+  if (t === T_WALL) {
+    fr(x, y, TILE, TILE, dng.wallColor);
+    // crack detail
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(x + 4, y + 8, 2, 10);
+    ctx.fillRect(x + 12, y + 20, 3, 8);
+    ctx.fillRect(x + TILE - 8, y + 6, 2, 12);
+    // top / left light edge
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(x, y, TILE, 2);
+    ctx.fillRect(x, y, 2, TILE);
+  } else if (t === T_FLOOR) {
+    fr(x, y, TILE, TILE, dng.floorColor);
+    // subtle grid lines
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fillRect(x, y, TILE, 1);
+    ctx.fillRect(x, y, 1, TILE);
+  } else if (t === T_ROCK) {
+    fr(x, y, TILE, TILE, dng.floorColor);
+    // rock shape
+    ctx.fillStyle = '#555566';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2, y + TILE / 2 + 2, TILE / 2 - 4, TILE / 2 - 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#777788';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2 - 3, y + TILE / 2 - 2, TILE / 2 - 8, TILE / 2 - 10, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#99aabb';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2 - 5, y + TILE / 2 - 5, 5, 4, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── sword slash animation (fiery slash, modelled on shrub-cut) ───
+function drawSwordAnim() {
+  if (!swordAnim) return;
+  const sx    = swordAnim.col * TILE;
+  const sy    = swordAnim.row * TILE;
+  const prog  = swordAnim.timer / 0.5;
+  const alpha = Math.max(0, 1 - prog);
+  const t2    = Date.now() / 80;
+  ctx.save();
+  ctx.fillStyle = `rgba(255,100,0,${alpha * 0.35})`;
+  ctx.fillRect(sx, sy, TILE, TILE);
+  for (let sl = 0; sl < 4; sl++) {
+    const slAlpha = alpha * (0.9 - sl * 0.15);
+    const off = sl * 4 - 6 + Math.sin(t2 + sl) * 3;
+    ctx.strokeStyle = sl % 2 === 0
+      ? `rgba(255,160,0,${slAlpha})`
+      : `rgba(255,220,50,${slAlpha})`;
+    ctx.lineWidth = 4 - sl;
+    ctx.beginPath();
+    ctx.moveTo(sx + 2 + off, sy + 2);
+    ctx.lineTo(sx + TILE - 2 + off, sy + TILE - 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx + TILE - 2 + off, sy + 2);
+    ctx.lineTo(sx + 2 + off, sy + TILE - 2);
+    ctx.stroke();
+  }
+  for (let sp = 0; sp < 8; sp++) {
+    const ang = (sp / 8) * Math.PI * 2 + t2;
+    const dist = 8 + 6 * Math.sin(t2 * 2 + sp);
+    const spx = sx + TILE / 2 + Math.cos(ang) * dist;
+    const spy = sy + TILE / 2 + Math.sin(ang) * dist;
+    ctx.beginPath();
+    ctx.arc(spx, spy, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,220,0,${alpha * 0.9})`;
+    ctx.shadowColor = '#ff8800';
+    ctx.shadowBlur  = 6;
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.lineWidth  = 1;
+  ctx.restore();
+}
+
+// ── cobweb drawing ───────────────────────────────────────────────
+function drawCobweb(cw) {
+  const x = cw.col * TILE;
+  const y = cw.row * TILE;
+  const cx2 = x + TILE / 2;
+  const cy2 = y + TILE / 2;
+  const t = Date.now() / 400;
+
+  if (cw.phase === 'warn') {
+    const pulse = 0.35 + 0.25 * Math.sin(t * Math.PI * 2);
+    ctx.save();
+    ctx.fillStyle = `rgba(180,100,255,${pulse})`;
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    ctx.strokeStyle = `rgba(220,140,255,${pulse * 0.9})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, TILE / 2 - 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.restore();
+  } else {
+    // active cobweb: radial web lines + rings
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,200,255,0.80)';
+    ctx.lineWidth = 1;
+    for (let s = 0; s < 8; s++) {
+      const ang = (s / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx2, cy2);
+      ctx.lineTo(cx2 + Math.cos(ang) * (TILE / 2 - 2), cy2 + Math.sin(ang) * (TILE / 2 - 2));
+      ctx.stroke();
+    }
+    for (const r of [5, 10, 16]) {
+      ctx.beginPath();
+      ctx.arc(cx2, cy2, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(160,100,255,0.20)';
+    ctx.fillRect(x, y, TILE, TILE);
+    ctx.lineWidth = 1;
+    ctx.restore();
+  }
+}
+
+// ── fireball drawing ─────────────────────────────────────────────
+function drawFireball(fb) {
+  const t = Date.now() / 100;
+  const map = currentDungeon.map;
+  ctx.save();
+
+  if (fb.type === 'row') {
+    const y = fb.index * TILE;
+
+    // find rock positions in this row to limit the line
+    let leftBound  = 0;
+    let rightBound = COLS - 1;
+    for (let c = 0; c < COLS; c++) {
+      if (map[fb.index][c] === T_ROCK) {
+        if (fb.dir === 'left'  && c < player.tileX) leftBound  = Math.max(leftBound,  c);
+        if (fb.dir === 'right' && c > player.tileX) rightBound = Math.min(rightBound, c);
+        if (fb.dir === 'left'  && c > player.tileX) rightBound = Math.min(rightBound, c - 1);
+        if (fb.dir === 'right' && c < player.tileX) leftBound  = Math.max(leftBound,  c + 1);
+      }
+    }
+
+    if (fb.phase === 'warn') {
+      const pulse = 0.3 + 0.2 * Math.sin(t * 0.8);
+      ctx.fillStyle = `rgba(255,80,0,${pulse})`;
+      ctx.fillRect(0, y, GAME_W, TILE);
+      ctx.strokeStyle = `rgba(255,140,0,${pulse * 1.5})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, y + 1, GAME_W - 2, TILE - 2);
+    } else {
+      // fiery line sweeping across
+      const fireGrad = ctx.createLinearGradient(0, y, 0, y + TILE);
+      fireGrad.addColorStop(0,   'rgba(255,200,50,0.95)');
+      fireGrad.addColorStop(0.4, 'rgba(255,80,0,0.85)');
+      fireGrad.addColorStop(1,   'rgba(180,20,0,0.5)');
+      ctx.fillStyle = fireGrad;
+      ctx.fillRect(0, y, GAME_W, TILE);
+      // flame flickers
+      for (let c = 0; c < COLS; c++) {
+        if (map[fb.index][c] === T_ROCK) continue;
+        const fx2 = c * TILE + TILE / 2;
+        const fh  = 16 + 10 * Math.abs(Math.sin(t + c * 0.7));
+        ctx.fillStyle = 'rgba(255,220,60,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(fx2 - 8, y + TILE);
+        ctx.lineTo(fx2, y + TILE - fh);
+        ctx.lineTo(fx2 + 8, y + TILE);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur  = 18;
+      ctx.fillStyle = 'rgba(255,120,0,0.6)';
+      ctx.fillRect(0, y, GAME_W, TILE);
+      ctx.shadowBlur = 0;
+    }
+  } else { // column
+    const x = fb.index * TILE;
+    if (fb.phase === 'warn') {
+      const pulse = 0.3 + 0.2 * Math.sin(t * 0.8);
+      ctx.fillStyle = `rgba(255,80,0,${pulse})`;
+      ctx.fillRect(x, 0, TILE, GAME_H);
+      ctx.strokeStyle = `rgba(255,140,0,${pulse * 1.5})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1, 1, TILE - 2, GAME_H - 2);
+    } else {
+      const fireGrad = ctx.createLinearGradient(x, 0, x + TILE, 0);
+      fireGrad.addColorStop(0,   'rgba(255,200,50,0.95)');
+      fireGrad.addColorStop(0.4, 'rgba(255,80,0,0.85)');
+      fireGrad.addColorStop(1,   'rgba(180,20,0,0.5)');
+      ctx.fillStyle = fireGrad;
+      ctx.fillRect(x, 0, TILE, GAME_H);
+      for (let r = 0; r < ROWS; r++) {
+        if (map[r][fb.index] === T_ROCK) continue;
+        const fy2 = r * TILE + TILE / 2;
+        const fw2 = 12 + 8 * Math.abs(Math.sin(t + r * 0.6));
+        ctx.fillStyle = 'rgba(255,220,60,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(x, fy2 - 8);
+        ctx.lineTo(x + fw2, fy2);
+        ctx.lineTo(x, fy2 + 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur  = 18;
+      ctx.fillStyle = 'rgba(255,120,0,0.6)';
+      ctx.fillRect(x, 0, TILE, GAME_H);
+      ctx.shadowBlur = 0;
+    }
+  }
+  ctx.lineWidth = 1;
+  ctx.restore();
+}
+
+// ── bite attack drawing ───────────────────────────────────────────
+function drawBite(bt) {
+  const x  = bt.col * TILE;
+  const y  = bt.row * TILE;
+  const cx2 = x + TILE / 2;
+  const cy2 = y + TILE / 2;
+  const t  = Date.now() / 200;
+
+  ctx.save();
+  if (bt.phase === 'warn') {
+    const pulse = 0.4 + 0.25 * Math.sin(t * Math.PI * 2);
+    ctx.fillStyle = `rgba(0,0,0,${pulse * 0.75})`;
+    ctx.beginPath();
+    ctx.ellipse(cx2, cy2 + 4, TILE / 2 - 4, TILE / 2 - 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(80,0,0,${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx2, cy2 + 4, TILE / 2 - 4, TILE / 2 - 8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  } else {
+    // bite animation: snapping teeth
+    const bp = Math.min(1, bt.timer / 0.3);
+    const jawOpen  = bp < 0.5 ? bp * 2 : 2 - bp * 2;
+    const jawGap   = jawOpen * 14;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(x, y, TILE, TILE);
+    // upper jaw
+    ctx.fillStyle = '#e8e0d0';
+    const toothW = 6, toothH = 10;
+    for (let i = 0; i < 3; i++) {
+      const tx2 = cx2 - 9 + i * 9;
+      ctx.beginPath();
+      ctx.moveTo(tx2 - toothW / 2, cy2 - jawGap / 2);
+      ctx.lineTo(tx2 + toothW / 2, cy2 - jawGap / 2);
+      ctx.lineTo(tx2, cy2 - jawGap / 2 + toothH);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // lower jaw
+    for (let i = 0; i < 3; i++) {
+      const tx2 = cx2 - 9 + i * 9;
+      ctx.beginPath();
+      ctx.moveTo(tx2 - toothW / 2, cy2 + jawGap / 2);
+      ctx.lineTo(tx2 + toothW / 2, cy2 + jawGap / 2);
+      ctx.lineTo(tx2, cy2 + jawGap / 2 - toothH);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // gum
+    ctx.fillStyle = 'rgba(180,20,20,0.7)';
+    ctx.fillRect(cx2 - 15, cy2 - jawGap / 2 - 5, 30, 5);
+    ctx.fillRect(cx2 - 15, cy2 + jawGap / 2,     30, 5);
+  }
+  ctx.restore();
+}
+
+// ── monster sprites ──────────────────────────────────────────────
+function drawMonster() {
+  const cx2 = monster.tileX * TILE + TILE;
+  const cy2 = monster.tileY * TILE + TILE;
+  const t  = Date.now() / 300;
+  const flash = monster.hitFlash > 0;
+
+  ctx.save();
+  if (flash) {
+    ctx.globalAlpha = 0.55 + 0.45 * Math.sin(Date.now() / 40);
+  }
+
+  if (monster.key === 'spider') {
+    drawSpider(cx2, cy2, t);
+  } else if (monster.key === 'wizard') {
+    drawWizard(cx2, cy2, t);
+  } else if (monster.key === 'hellhound') {
+    drawHellhound(cx2, cy2, t);
+  }
+
+  ctx.restore();
+}
+
+function drawSpider(cx2, cy2, t) {
+  const s = TILE * 1.3;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 + s * 0.5, s * 0.7, s * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // legs (8 legs)
+  ctx.strokeStyle = '#1a1020';
+  ctx.lineWidth   = 3;
+  const legAngs = [-0.6, -0.35, -0.1, 0.1, 0.6, 0.85, 1.1, 1.35]
+    .map((a, i) => ({ side: i < 4 ? -1 : 1, baseAng: a }));
+  for (const { side, baseAng } of legAngs) {
+    const wa = Math.sin(t + baseAng * 3) * 0.12;
+    const startX = cx2 + side * s * 0.3;
+    const startY = cy2;
+    const midX   = cx2 + side * (s * 0.8 + Math.cos(baseAng + wa) * s * 0.3);
+    const midY   = cy2 - s * 0.1 + Math.sin(baseAng + wa) * s * 0.5;
+    const endX   = cx2 + side * (s * 1.1 + Math.cos(baseAng + wa + 0.3) * s * 0.3);
+    const endY   = cy2 + s * 0.35 + Math.sin(baseAng + wa + 0.3) * s * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(midX, midY, endX, endY);
+    ctx.stroke();
+  }
+
+  // abdomen
+  ctx.fillStyle = '#1a1020';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 + 8, s * 0.42, s * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // hourglass mark on abdomen
+  ctx.fillStyle = '#aa2222';
+  ctx.beginPath();
+  ctx.moveTo(cx2, cy2 + 8 - 8);
+  ctx.lineTo(cx2 - 4, cy2 + 8 - 3);
+  ctx.lineTo(cx2 + 4, cy2 + 8 - 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx2, cy2 + 8 + 8);
+  ctx.lineTo(cx2 - 4, cy2 + 8 + 3);
+  ctx.lineTo(cx2 + 4, cy2 + 8 + 3);
+  ctx.closePath();
+  ctx.fill();
+
+  // cephalothorax (head+thorax)
+  ctx.fillStyle = '#2a1a30';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 - s * 0.15, s * 0.3, s * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // eyes (8 red glowing eyes)
+  ctx.fillStyle = '#ff2200';
+  ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 8;
+  const eyePos = [[-8,-4],[-4,-8],[4,-8],[8,-4],[-8,0],[-4,2],[4,2],[8,0]];
+  for (const [ex, ey] of eyePos) {
+    ctx.beginPath();
+    ctx.arc(cx2 + ex, cy2 - s * 0.15 + ey, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.lineWidth  = 1;
+
+  // fangs
+  ctx.fillStyle = '#e8dcc0';
+  ctx.beginPath();
+  ctx.moveTo(cx2 - 6, cy2 + 2);
+  ctx.lineTo(cx2 - 2, cy2 + 2);
+  ctx.lineTo(cx2 - 4, cy2 + 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx2 + 6, cy2 + 2);
+  ctx.lineTo(cx2 + 2, cy2 + 2);
+  ctx.lineTo(cx2 + 4, cy2 + 10);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawWizard(cx2, cy2, t) {
+  const s = TILE * 1.2;
+  const bob = Math.sin(t * 0.8) * 3;
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 + s * 0.85, s * 0.35, s * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // robe
+  ctx.fillStyle = '#1a0840';
+  ctx.beginPath();
+  ctx.moveTo(cx2 - s * 0.28, cy2 - s * 0.1 + bob);
+  ctx.lineTo(cx2 + s * 0.28, cy2 - s * 0.1 + bob);
+  ctx.lineTo(cx2 + s * 0.38, cy2 + s * 0.75 + bob);
+  ctx.lineTo(cx2 - s * 0.38, cy2 + s * 0.75 + bob);
+  ctx.closePath();
+  ctx.fill();
+  // robe hem rune pattern
+  ctx.strokeStyle = '#5522aa';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx2 - s * 0.36, cy2 + s * 0.65 + bob, s * 0.72, 8);
+  ctx.lineWidth = 1;
+
+  // staff (left hand)
+  ctx.strokeStyle = '#4a3010';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(cx2 - s * 0.4, cy2 + s * 0.7 + bob);
+  ctx.lineTo(cx2 - s * 0.55, cy2 - s * 0.8 + bob);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  // orb on staff
+  const orbPulse = 0.7 + 0.3 * Math.sin(t * 1.5);
+  ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 16 * orbPulse;
+  ctx.fillStyle = `rgba(150,60,255,${orbPulse})`;
+  ctx.beginPath();
+  ctx.arc(cx2 - s * 0.55, cy2 - s * 0.88 + bob, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = `rgba(220,180,255,${orbPulse * 0.6})`;
+  ctx.beginPath();
+  ctx.arc(cx2 - s * 0.55 - 2, cy2 - s * 0.88 + bob - 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // body/chest
+  ctx.fillStyle = '#260a50';
+  ctx.fillRect(cx2 - s * 0.22, cy2 - s * 0.12 + bob, s * 0.44, s * 0.5);
+
+  // arms
+  ctx.strokeStyle = '#1a0840';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(cx2 - s * 0.22, cy2 - s * 0.05 + bob);
+  ctx.lineTo(cx2 - s * 0.48, cy2 + s * 0.35 + bob);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx2 + s * 0.22, cy2 - s * 0.05 + bob);
+  ctx.lineTo(cx2 + s * 0.38, cy2 + s * 0.3 + bob);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // head
+  ctx.fillStyle = '#e0c898';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 - s * 0.28 + bob, s * 0.18, s * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // glowing eyes
+  ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#cc88ff';
+  ctx.beginPath(); ctx.arc(cx2 - 6, cy2 - s * 0.3 + bob, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx2 + 6, cy2 - s * 0.3 + bob, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // hat
+  ctx.fillStyle = '#0d0428';
+  ctx.beginPath();
+  ctx.moveTo(cx2 - s * 0.25, cy2 - s * 0.46 + bob);
+  ctx.lineTo(cx2 + s * 0.25, cy2 - s * 0.46 + bob);
+  ctx.lineTo(cx2 + s * 0.3,  cy2 - s * 0.5  + bob);
+  ctx.lineTo(cx2,             cy2 - s * 1.0  + bob);
+  ctx.lineTo(cx2 - s * 0.3,  cy2 - s * 0.5  + bob);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#3a1a80';
+  ctx.fillRect(cx2 - s * 0.3, cy2 - s * 0.5 + bob, s * 0.6, 4);
+}
+
+function drawHellhound(cx2, cy2, t) {
+  const s = TILE * 1.2;
+  const bob = Math.sin(t * 1.2) * 2;
+
+  // ground flames
+  for (let i = 0; i < 6; i++) {
+    const fi  = i / 6;
+    const fAng = fi * Math.PI * 2 + t * 0.5;
+    const fr2  = s * 0.55;
+    const fxOff = Math.cos(fAng) * fr2;
+    const fyOff = Math.sin(fAng) * fr2 * 0.4;
+    const fh = 14 + 8 * Math.abs(Math.sin(t * 1.8 + fi * 2.1));
+    const fAlpha = 0.55 + 0.2 * Math.sin(t * 2 + fi);
+    ctx.fillStyle = `rgba(255,80,0,${fAlpha})`;
+    ctx.beginPath();
+    ctx.moveTo(cx2 + fxOff - 5, cy2 + s * 0.5 + fyOff);
+    ctx.lineTo(cx2 + fxOff,     cy2 + s * 0.5 + fyOff - fh);
+    ctx.lineTo(cx2 + fxOff + 5, cy2 + s * 0.5 + fyOff);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 + s * 0.52, s * 0.55, s * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // body
+  ctx.fillStyle = '#1a0505';
+  ctx.beginPath();
+  ctx.ellipse(cx2, cy2 + s * 0.1 + bob, s * 0.42, s * 0.28, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // legs
+  const legPairs = [[-s*0.25, s*0.32], [s*0.25, s*0.32], [-s*0.18, s*0.42], [s*0.18, s*0.42]];
+  for (let i = 0; i < 4; i++) {
+    const [lx, ly] = legPairs[i];
+    const lBob = Math.sin(t * 2.5 + i * 1.2) * 4;
+    ctx.fillStyle = '#1a0505';
+    fr(cx2 + lx - 4, cy2 + ly + bob + lBob, 8, 14, '#1a0505');
+    fr(cx2 + lx - 5, cy2 + ly + 12 + bob + lBob, 10, 5, '#2a0a0a');
+  }
+
+  // tail
+  ctx.strokeStyle = '#2a0808';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cx2 - s * 0.38, cy2 + s * 0.05 + bob);
+  ctx.quadraticCurveTo(cx2 - s * 0.7, cy2 - s * 0.2 + bob, cx2 - s * 0.55, cy2 - s * 0.5 + bob);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // head
+  ctx.fillStyle = '#200808';
+  ctx.beginPath();
+  ctx.ellipse(cx2 + s * 0.32, cy2 - s * 0.08 + bob, s * 0.28, s * 0.22, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // snout
+  ctx.fillStyle = '#2a0a0a';
+  ctx.beginPath();
+  ctx.ellipse(cx2 + s * 0.55, cy2 - s * 0.02 + bob, s * 0.14, s * 0.1, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ears
+  ctx.fillStyle = '#1a0505';
+  ctx.beginPath();
+  ctx.moveTo(cx2 + s * 0.25, cy2 - s * 0.25 + bob);
+  ctx.lineTo(cx2 + s * 0.2,  cy2 - s * 0.55 + bob);
+  ctx.lineTo(cx2 + s * 0.38, cy2 - s * 0.3  + bob);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx2 + s * 0.38, cy2 - s * 0.22 + bob);
+  ctx.lineTo(cx2 + s * 0.38, cy2 - s * 0.5  + bob);
+  ctx.lineTo(cx2 + s * 0.52, cy2 - s * 0.25 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // eyes (glowing red/orange)
+  ctx.shadowColor = '#ff3300'; ctx.shadowBlur = 14;
+  ctx.fillStyle = '#ff4400';
+  ctx.beginPath(); ctx.arc(cx2 + s * 0.4,  cy2 - s * 0.1 + bob, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx2 + s * 0.52, cy2 - s * 0.06 + bob, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // teeth
+  ctx.fillStyle = '#e0dcd0';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx2 + s * 0.46 + i * 5, cy2 + s * 0.04 + bob);
+    ctx.lineTo(cx2 + s * 0.49 + i * 5, cy2 + s * 0.04 + bob);
+    ctx.lineTo(cx2 + s * 0.475 + i * 5, cy2 + s * 0.12 + bob);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+// ── HUD ──────────────────────────────────────────────────────────
+function drawHUD() {
+  // monster HP bar (top-center)
+  const barW = 300, barH = 18;
+  const bx = (GAME_W - barW) / 2;
+  const by = 10;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(bx - 80, by - 4, barW + 90, barH + 10);
+
+  const fillW = Math.max(0, Math.round(barW * monster.hp / monster.maxHp));
+  ctx.fillStyle = '#660000';
+  ctx.fillRect(bx, by, barW, barH);
+  if (fillW > 0) {
+    const hpFrac = monster.hp / monster.maxHp;
+    const hpColor = hpFrac > 0.5 ? '#22cc44'
+                  : hpFrac > 0.25 ? '#aacc22'
+                  : '#cc2222';
+    ctx.fillStyle = hpColor;
+    ctx.fillRect(bx, by, fillW, barH);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(bx, by, fillW, barH / 2);
+  }
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx, by, barW, barH);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${monster.name}  ${monster.hp}/${monster.maxHp}`, bx + barW / 2, by + 13);
+  ctx.textAlign = 'left';
+
+  // player hearts (top-left)
+  const heartX = 16, heartY = 14;
+  ctx.font = '24px serif';
+  for (let i = 0; i < 3; i++) {
+    ctx.globalAlpha = i < player.hearts ? 1 : 0.25;
+    ctx.fillText('❤', heartX + i * 30, heartY + 14);
+  }
+  ctx.globalAlpha = 1;
+
+  // trapped indicator
+  if (player.trapped) {
+    ctx.fillStyle = 'rgba(160,80,255,0.18)';
+    ctx.fillRect(0, 0, GAME_W, GAME_H);
+    ctx.fillStyle = '#cc88ff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('🕸 Trapped!', GAME_W / 2, GAME_H - 20);
+    ctx.textAlign = 'left';
+  }
+
+  // attack button hint
+  if (attackCooldown <= 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(GAME_W - 160, GAME_H - 34, 148, 22);
+    ctx.fillStyle = '#daa520';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('[SPACE] Attack', GAME_W - 14, GAME_H - 17);
+    ctx.textAlign = 'left';
+  }
+}
+
+// ── red screen flash ─────────────────────────────────────────────
+function drawDamageFlash() {
+  if (damageFlash <= 0) return;
+  ctx.strokeStyle = `rgba(220,0,0,${damageFlash * 0.75})`;
+  ctx.lineWidth   = 28;
+  ctx.strokeRect(0, 0, GAME_W, GAME_H);
+  ctx.fillStyle   = `rgba(220,0,0,${Math.min(0.18, damageFlash * 0.22)})`;
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.lineWidth   = 1;
+}
+
+// ── invincibility flicker ─────────────────────────────────────────
+function isPlayerVisible() {
+  if (!player.invincible) return true;
+  return Math.floor(Date.now() / 80) % 2 === 0;
+}
+
+// ================================================================
+//  RENDER
+// ================================================================
+
+function render() {
+  if (gameState === 'menu') {
+    renderMenu();
+  } else if (gameState === 'battle') {
+    renderBattle();
+  } else if (gameState === 'win') {
+    renderBattle();
+    renderWin();
+  } else if (gameState === 'lose') {
+    renderBattle();
+    renderLose();
+  }
+}
+
+function renderMenu() {
+  const t = Date.now() / 600;
+  // background
+  ctx.fillStyle = '#0a0810';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  // starfield
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (let i = 0; i < 80; i++) {
+    const sx = ((i * 137 + 17) % GAME_W);
+    const sy = ((i * 251 + 43) % GAME_H);
+    const ss = 1 + (i % 3) * 0.6;
+    const sa = 0.4 + 0.4 * Math.abs(Math.sin(t + i));
+    ctx.globalAlpha = sa;
+    ctx.fillRect(sx, sy, ss, ss);
+  }
+  ctx.globalAlpha = 1;
+
+  // title
+  ctx.save();
+  ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 24;
+  ctx.fillStyle = '#cc88ff';
+  ctx.font = 'bold 40px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('⚔️  Monster Battle  ⚔️', GAME_W / 2, 90);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#888';
+  ctx.font = '16px monospace';
+  ctx.fillText('Choose your opponent  ·  ◀ ▶ to select  ·  SPACE to fight', GAME_W / 2, 130);
+  ctx.restore();
+
+  // monster cards
+  const cardW  = 280, cardH = 340;
+  const startX = GAME_W / 2 - (cardW * 3 + 48) / 2;
+  const cardY  = 175;
+  const mKeys  = ['spider', 'wizard', 'hellhound'];
+
+  mKeys.forEach((key, i) => {
+    const data = MONSTER_DATA[key];
+    const cx2  = startX + i * (cardW + 24) + cardW / 2;
+    const sel  = menuSelected === i;
+
+    // card background
+    const cardAlpha = sel ? 1 : 0.65;
+    ctx.save();
+    ctx.globalAlpha = cardAlpha;
+
+    const cardGrad = ctx.createLinearGradient(cx2 - cardW / 2, cardY, cx2 - cardW / 2, cardY + cardH);
+    cardGrad.addColorStop(0, sel ? '#2a1a4a' : '#1a1228');
+    cardGrad.addColorStop(1, sel ? '#1a0a30' : '#110a1e');
+    ctx.fillStyle = cardGrad;
+    ctx.beginPath();
+    ctx.roundRect(cx2 - cardW / 2, cardY, cardW, cardH, 12);
+    ctx.fill();
+
+    ctx.strokeStyle = sel ? '#aa66ff' : '#443355';
+    ctx.lineWidth   = sel ? 3 : 1;
+    ctx.beginPath();
+    ctx.roundRect(cx2 - cardW / 2, cardY, cardW, cardH, 12);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.restore();
+
+    // monster sprite (clipped to card)
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(cx2 - cardW / 2 + 8, cardY + 8, cardW - 16, cardH - 100, 8);
+    ctx.clip();
+    ctx.globalAlpha = cardAlpha;
+
+    // mini dungeon bg
+    ctx.fillStyle = DUNGEONS[key].bgColor;
+    ctx.fillRect(cx2 - cardW / 2 + 8, cardY + 8, cardW - 16, cardH - 100);
+
+    const monsterY = cardY + 80;
+    if (key === 'spider')    drawSpider(cx2, monsterY, t);
+    else if (key === 'wizard')   drawWizard(cx2, monsterY, t);
+    else if (key === 'hellhound') drawHellhound(cx2, monsterY, t);
+    ctx.restore();
+
+    // card text
+    ctx.save();
+    ctx.globalAlpha = cardAlpha;
+    ctx.fillStyle = sel ? '#cc88ff' : '#aaaacc';
+    ctx.font = `bold ${sel ? 20 : 17}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(data.name, cx2, cardY + cardH - 75);
+
+    const hpColors = { spider: '#44cc44', wizard: '#cc4444', hellhound: '#ffaa22' };
+    ctx.fillStyle = hpColors[key];
+    ctx.font = '14px monospace';
+    ctx.fillText(`HP: ${data.maxHp}`, cx2, cardY + cardH - 52);
+
+    ctx.fillStyle = '#888899';
+    ctx.font = '12px monospace';
+    const desc = key === 'spider'    ? 'Cobweb Traps'
+               : key === 'wizard'    ? 'Fireball Barrage'
+               :                      'Hellfire Bites';
+    ctx.fillText(desc, cx2, cardY + cardH - 32);
+    ctx.restore();
+
+    // selected arrow
+    if (sel) {
+      ctx.fillStyle = '#cc88ff';
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▼', cx2, cardY + cardH + 28);
+    }
+  });
+
+  ctx.textAlign = 'left';
+}
+
+function renderBattle() {
+  const dng = currentDungeon;
+  if (!dng) return;
+
+  // background
+  ctx.fillStyle = dng.bgColor;
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+  // tiles
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      drawTile(dng.map[row][col], col, row);
+    }
+  }
+
+  // cobwebs (warn phase)
+  for (const cw of cobwebs) {
+    if (cw.phase === 'warn') drawCobweb(cw);
+  }
+
+  // fireballs (warn phase)
+  for (const fb of fireballs) {
+    if (fb.phase === 'warn') drawFireball(fb);
+  }
+
+  // bite attacks (warn phase)
+  for (const bt of biteAttacks) {
+    if (bt.phase === 'warn') drawBite(bt);
+  }
+
+  // footsteps
+  drawFootsteps();
+
+  // cobwebs (active phase, drawn over footsteps)
+  for (const cw of cobwebs) {
+    if (cw.phase === 'active') drawCobweb(cw);
+  }
+
+  // fireballs (fire phase)
+  for (const fb of fireballs) {
+    if (fb.phase === 'fire') drawFireball(fb);
+  }
+
+  // bite attacks (bite phase)
+  for (const bt of biteAttacks) {
+    if (bt.phase === 'bite') drawBite(bt);
+  }
+
+  // sword animation
+  drawSwordAnim();
+
+  // player
+  if (isPlayerVisible()) {
+    drawKnight(player.pxX, player.pxY, player.facing, player.walkFrame);
+  }
+
+  // monster
+  drawMonster();
+
+  // HUD
+  drawHUD();
+
+  // damage flash
+  drawDamageFlash();
+}
+
+function renderWin() {
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.save();
+  ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#ffdd44';
+  ctx.font = 'bold 56px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Victory!', GAME_W / 2, GAME_H / 2 - 30);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#aaffaa';
+  ctx.font = '22px monospace';
+  ctx.fillText(`${monster.name} defeated!`, GAME_W / 2, GAME_H / 2 + 20);
+  ctx.fillStyle = '#888';
+  ctx.font = '16px monospace';
+  ctx.fillText('Press SPACE or ENTER to return to menu', GAME_W / 2, GAME_H / 2 + 58);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+function renderLose() {
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.save();
+  ctx.shadowColor = '#cc2222'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#cc2222';
+  ctx.font = 'bold 56px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Defeated!', GAME_W / 2, GAME_H / 2 - 30);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffaaaa';
+  ctx.font = '22px monospace';
+  ctx.fillText(`${monster.name} was too powerful…`, GAME_W / 2, GAME_H / 2 + 20);
+  ctx.fillStyle = '#888';
+  ctx.font = '16px monospace';
+  ctx.fillText('Press SPACE or ENTER to return to menu', GAME_W / 2, GAME_H / 2 + 58);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+// ================================================================
+//  MAIN LOOP
+// ================================================================
+
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+canvas.setAttribute('tabindex', '0');
+canvas.focus();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
