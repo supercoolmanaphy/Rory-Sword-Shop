@@ -3142,6 +3142,7 @@ function update(dt) {
         return;
       }
       // ── pitfall trap – teleport player back to room entry ──────
+      // Rooms with pitfalls must define 'entryFromCave1' or 'playerSpawn'
       if (tile === T.PITFALL) {
         const sp = ROOMS[roomIdx].entryFromCave1 || ROOMS[roomIdx].playerSpawn;
         startTransition(roomIdx, sp.x, sp.y);
@@ -3340,7 +3341,7 @@ function render() {
         if (room.map[row][col] === T.CREAM_MUSH) {
           const gx2 = col * TILE + TILE / 2;
           const gy2 = row * TILE + TILE / 2 - 4;
-          const pulse = 0.30 + 0.15 * Math.sin(t + col * 1.3);
+          const pulse = 0.30 + 0.15 * Math.sin(t + col * 1.3); // base opacity + pulsing amplitude (phase offset per column)
           const glow = ctx.createRadialGradient(gx2, gy2, 2, gx2, gy2, TILE * 1.1);
           glow.addColorStop(0, `rgba(255,255,230,${pulse})`);
           glow.addColorStop(1, 'rgba(255,255,200,0)');
