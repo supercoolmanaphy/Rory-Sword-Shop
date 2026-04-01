@@ -422,6 +422,16 @@ const T = Object.freeze({
   CAVE_FLOOR:47, // walkable rocky cave floor
   CAVE_ROCK: 48, // jagged cave rock (non-walkable)
   COBWEB_T:  49, // cobweb decoration (walkable)
+  DOOR_C2:   50, // cave 1 → cave 2 spike maze  (bottom-left of cave 1)
+  DOOR_2C:   51, // cave 2 → cave 1 (top of cave 2)
+  DOOR_C3:   52, // cave 1 → cave pool  (bottom-middle of cave 1)
+  DOOR_3C:   53, // cave pool → cave 1
+  DOOR_C4:   54, // cave 1 → cave 4 skeleton den (bottom-right of cave 1)
+  DOOR_4C:   55, // cave 4 → cave 1
+  PITFALL:   56, // dark pit trap – walkable, teleports player back to room entry
+  CREAM_MUSH:57, // cream mushroom with white glow (walkable decoration)
+  CAVE_POOL: 58, // animated blue cave pool (non-walkable)
+  SKELETON:  59, // skeleton decor (non-walkable prop)
 });
 
 const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS,
@@ -429,7 +439,9 @@ const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS,
                            T.DOOR_FL, T.DOOR_FO, T.BRIDGE, T.MUSH,
                            T.DOOR_PL, T.DOOR_LP, T.DOOR_DF, T.DOOR_FD,
                            T.DOOR_DCE, T.DOOR_CED, T.CAVE_OPEN, T.CAVE_BACK,
-                           T.CAVE_FLOOR, T.COBWEB_T]);
+                           T.CAVE_FLOOR, T.COBWEB_T,
+                           T.DOOR_C2, T.DOOR_2C, T.DOOR_C3, T.DOOR_3C,
+                           T.DOOR_C4, T.DOOR_4C, T.PITFALL, T.CREAM_MUSH]);
 
 // ── short aliases for map building ──────────────────────────────
 const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
@@ -444,7 +456,10 @@ const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
         DOOR_PL:DPL, DOOR_LP:DLP, DOOR_DF:DDF, DOOR_FD:DFD,
         SHRUB:SHRB,
         DOOR_DCE:DDCE, DOOR_CED:DCED, CAVE_OPEN:COP, CAVE_BACK:CBK,
-        CAVE_FLOOR:CVF, CAVE_ROCK:CVR, COBWEB_T:CWT } = T;
+        CAVE_FLOOR:CVF, CAVE_ROCK:CVR, COBWEB_T:CWT,
+        DOOR_C2:DC2, DOOR_2C:D2C, DOOR_C3:DC3, DOOR_3C:D3C,
+        DOOR_C4:DC4, DOOR_4C:D4C, PITFALL:PIT,
+        CREAM_MUSH:CMU, CAVE_POOL:CPL, SKELETON:SKL } = T;
 
 // ── room definitions ─────────────────────────────────────────────
 const ROOMS = [
@@ -794,33 +809,168 @@ const ROOMS = [
       // row 3 – cobwebs near entrance edge (2 steps from door)
       [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CWT,CVF,CVF,CVF,CVF,CWT,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 4 – deeper cave (requires torch); paths widen
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 5
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 6
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 7 – cobwebs mid-cave
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CWT,CVF,CVF,CVF,CWT,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CWT,CVF,CVF,CVF,CWT,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 8
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 9
-      [CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVF,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVF,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 10 – cobwebs lower cave
-      [CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CWT,CVR,CVF,CVF,CVF,CVR,CWT,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVR,CVF,CVF,CVR,CVR,CVR,CWT,CVR,CVF,CVF,CVF,CVR,CWT,CVR,CVR,CVF,CVF,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 11
-      [CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 12
-      [CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 13 – cobwebs deep
-      [CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CWT,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CWT,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      [CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CWT,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CWT,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
       // row 14
       [CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
-      // row 15 – cave floor
-      [CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 15 – bottom wall; new doors at cols 3 (left), 14 (middle), 23 (right)
+      [CVR,CVR,CVR,DC2,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,DC3,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,DC4,CVR,CVR,CVR,CVR,CVR,CVR],
     ],
     playerSpawn:            { x: 14, y: 1 },
     chestTile:              null,
     entryFromCaveEntrance:  { x: 14, y: 1 },
+    entryFromCave2:         { x: 3,  y: 14 },
+    entryFromCave3:         { x: 14, y: 14 },
+    entryFromCave4:         { x: 23, y: 14 },
+  },
+
+  // ── Room 10 : Cave 2 – Spike Maze ──────────────────────────────
+  {
+    name: 'Spike Maze',
+    bgColor: '#050302',
+    map: [
+      // row 0 – top wall; back-door to Cave 1 at col 3
+      [CVR,CVR,CVR,D2C,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 1 – entry corridor going right from door (cols 3-12)
+      [CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 2 – dead-end branch at col 7 going down; main path col 12 continues
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 3 – pitfall at end of col-7 branch; col 12 continues down
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,PIT,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 4 – right corridor cols 12-18; dead-end branch right at col 18 continues down
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 5 – col 15 dead-end branch down; col 18 main path down
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 6 – left corridor cols 5-11 (cream mush at col 8); col 15 dead-end; col 18 continues
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CMU,CVF,CVF,CVF,CVR,CVR,CVR,CVF,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 7 – col 5 up-path; pitfalls at cols 11 and 15; right corridor cols 18-24
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,PIT,CVR,CVR,CVR,PIT,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 8 – col 5 path; col 11 up-branch; col 15 up-branch; col 24 down
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 9 – col 5 path; col 11 up-branch; col 15 up-branch; col 24 down
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 10 – main horizontal corridor cols 5-24 (cream mush at col 8)
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CMU,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 11 – col 24 continues down to chest
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 12
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 13
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 14 – chest at col 24 (end of maze)
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR, CC,CVR,CVR,CVR,CVR,CVR],
+      // row 15 – bottom wall
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+    ],
+    playerSpawn:        { x: 3, y: 1 },
+    chestTile:          { x: 24, y: 14 },
+    chestItems:         [
+      { id:'cave2_coins', name:'5 Gold Coins', icon:'🪙', desc:'A small pile of gold coins hidden deep in the maze', taken:false, isCoins:true, amount:5 },
+    ],
+    entryFromCave1:     { x: 3, y: 1 },
+  },
+
+  // ── Room 11 : Cave Pool ─────────────────────────────────────────
+  {
+    name: 'Cave Pool',
+    bgColor: '#030508',
+    map: [
+      // row 0 – top wall; back-door to Cave 1 at col 14
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,D3C,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 1 – open entry area with rock clusters near edges
+      [CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR],
+      // row 2 – rock clusters at sides
+      [CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR],
+      // row 3 – spiked rocks framing the entry
+      [CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 4 – approach to pool; rock spikes
+      [CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 5 – pool edge begins; CVF ring around pool
+      [CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 6 – pool widens
+      [CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 7 – full pool width
+      [CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 8 – full pool width
+      [CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 9 – pool narrows
+      [CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CPL,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 10 – pool ends; rock spikes resume
+      [CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 11 – narrowing floor with rocks
+      [CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR],
+      // row 12
+      [CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 13
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 14 – floor narrows toward bottom wall
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 15 – bottom wall
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+    ],
+    playerSpawn:    { x: 14, y: 1 },
+    chestTile:      null,
+    entryFromCave1: { x: 14, y: 1 },
+  },
+
+  // ── Room 12 : Cave 4 – Skeleton Den ────────────────────────────
+  {
+    name: 'Skeleton Den',
+    bgColor: '#050302',
+    map: [
+      // row 0 – top wall; back-door to Cave 1 at col 23
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,D4C,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 1 – entry alcove (cols 18-27)
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR],
+      // row 2 – entry area opens
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR],
+      // row 3 – cobweb and spiked rocks; corridor forms going left
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CWT,CVR,CVR,CVR,CVR],
+      // row 4 – corridor continues left
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVF,CMU,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 5 – cream mushroom; path continues
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 6 – wider section
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 7 – skeleton decor; path turns
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 8 – skeleton at col 10; path widens
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,SKL,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 9 – horizontal section opens
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 10 – cobweb at left edge; cream mushroom; path branches
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CWT,CVF,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 11 – dead-end pockets with rocks; skeleton decor
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVF,CVR,CVF,CVF,CVF,CVF,CVF,CVF,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 12 – cobweb; skeleton decor at col 14
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,SKL,CWT,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 13 – path narrows toward bottom
+      [CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 14 – bottom area
+      [CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVF,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+      // row 15 – bottom wall
+      [CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR,CVR],
+    ],
+    playerSpawn:    { x: 23, y: 1 },
+    chestTile:      null,
+    entryFromCave1: { x: 23, y: 1 },
   },
 ]; // ── chest item catalogue ─────────────────────────────────────────
 const CHEST_ITEMS = [
@@ -973,6 +1123,9 @@ const ROOM_IMAGES = {
   7: 'images/plantersfield.png',
   8: 'images/caveentrance.png',
   9: 'images/cave1.png',
+  10: 'images/cave5.png',
+  11: 'images/cave3.png',
+  12: 'images/cave4.png',
 };
 
 const NPC_IMAGES = {
@@ -1657,6 +1810,123 @@ function drawTile(type, col, row) {
         ctx.stroke();
       }
       ctx.lineWidth = 1;
+      break;
+    }
+
+    // ─ cave sub-door going down (cave 1 → cave 2/3/4) ────────────
+    case T.DOOR_C2:
+    case T.DOOR_C3:
+    case T.DOOR_C4: {
+      fr(x, y, TILE, TILE, '#2a2420');
+      fr(x+2, y, 6, TILE, '#3a3028');
+      fr(x+TILE-8, y, 6, TILE, '#3a3028');
+      fr(x+6, y, TILE-12, TILE-4, '#08060a');
+      ctx.fillStyle = 'rgba(60,30,100,0.55)';
+      ctx.fillRect(x+8, y+2, TILE-16, TILE-8);
+      ctx.fillStyle = '#aa88cc';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▼', x+TILE/2, y+TILE/2+5);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ cave sub-door going up (cave 2/3/4 → cave 1) ──────────────
+    case T.DOOR_2C:
+    case T.DOOR_3C:
+    case T.DOOR_4C: {
+      fr(x, y, TILE, TILE, '#2a2420');
+      fr(x+2, y, 6, TILE, '#3a3028');
+      fr(x+TILE-8, y, 6, TILE, '#3a3028');
+      fr(x+6, y, TILE-12, TILE-4, '#08060a');
+      ctx.fillStyle = 'rgba(60,100,200,0.20)';
+      ctx.fillRect(x+8, y+2, TILE-16, TILE-10);
+      ctx.fillStyle = '#88aaff';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▲', x+TILE/2, y+TILE/2);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ pitfall trap ───────────────────────────────────────────────
+    case T.PITFALL: {
+      fr(x, y, TILE, TILE, '#080604');
+      // dark pit circle
+      ctx.save();
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.ellipse(x+TILE/2, y+TILE/2+2, 14, 10, 0, 0, Math.PI*2);
+      ctx.fill();
+      // inner abyss
+      ctx.fillStyle = '#0a0006';
+      ctx.beginPath();
+      ctx.ellipse(x+TILE/2, y+TILE/2+2, 10, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+      // subtle dark-red rim glow
+      ctx.strokeStyle = 'rgba(80,0,0,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(x+TILE/2, y+TILE/2+2, 14, 10, 0, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.restore();
+      break;
+    }
+
+    // ─ cream mushroom with white glow ────────────────────────────
+    case T.CREAM_MUSH: {
+      fr(x, y, TILE, TILE, '#1a1410');
+      // white glow halo
+      ctx.save();
+      const gm = ctx.createRadialGradient(x+TILE/2, y+24, 2, x+TILE/2, y+24, 20);
+      gm.addColorStop(0, 'rgba(255,255,240,0.45)');
+      gm.addColorStop(1, 'rgba(255,255,220,0)');
+      ctx.fillStyle = gm;
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.restore();
+      // stalk (cream)
+      fr(x+16, y+24, 8, 12, '#e8dcc0');
+      // cap (cream/off-white)
+      fr(x+10, y+14, 20, 10, '#f0e8d0');
+      fr(x+8,  y+16, 24, 8, '#f0e8d0');
+      fr(x+12, y+12, 16, 6, '#f8f0e0');
+      // spots (white)
+      fr(x+13, y+15, 3, 3, '#ffffff');
+      fr(x+22, y+17, 3, 3, '#ffffff');
+      fr(x+17, y+13, 2, 2, '#ffffff');
+      break;
+    }
+
+    // ─ cave pool (animated overlay drawn in render()) ─────────────
+    case T.CAVE_POOL: {
+      fr(x, y, TILE, TILE, '#030e1a');
+      fr(x+2, y+2, TILE-4, TILE-4, '#041220');
+      ctx.fillStyle = 'rgba(10,60,130,0.7)';
+      ctx.fillRect(x+2, y+2, TILE-4, TILE-4);
+      break;
+    }
+
+    // ─ skeleton decor ────────────────────────────────────────────
+    case T.SKELETON: {
+      fr(x, y, TILE, TILE, '#1a1410');
+      const sx2 = x + TILE/2, sy2 = y + TILE/2;
+      // skull
+      fr(sx2-6, sy2-14, 12, 10, '#d0c8b0');
+      fr(sx2-4, sy2-4,  8,  2,  '#d0c8b0'); // jaw
+      // eye sockets (dark)
+      fr(sx2-5, sy2-12, 3, 3, '#1a1410');
+      fr(sx2+2, sy2-12, 3, 3, '#1a1410');
+      // ribcage
+      fr(sx2-7, sy2-1,  14, 2, '#c8c0a8'); // collar
+      fr(sx2-6, sy2+2,  3, 8, '#c0b8a0');  // left ribs
+      fr(sx2+3, sy2+2,  3, 8, '#c0b8a0');
+      fr(sx2-2, sy2+2,  4, 2, '#b0a890');  // spine
+      fr(sx2-2, sy2+5,  4, 2, '#b0a890');
+      fr(sx2-2, sy2+8,  4, 2, '#b0a890');
+      // legs (bones)
+      fr(sx2-6, sy2+11, 4, 10, '#c8c0a8');
+      fr(sx2+2, sy2+11, 4, 10, '#c8c0a8');
       break;
     }
 
@@ -2427,7 +2697,9 @@ function openChestModal() {
   const list = document.getElementById('chest-items-list');
   list.innerHTML = '';
 
-  const untaken = CHEST_ITEMS.filter(item => !item.taken);
+  // use per-room chestItems if defined, otherwise fall back to global CHEST_ITEMS
+  const itemSource = ROOMS[roomIdx].chestItems || CHEST_ITEMS;
+  const untaken = itemSource.filter(item => !item.taken);
 
   if (untaken.length === 0) {
     const msg = document.createElement('p');
@@ -2458,12 +2730,12 @@ function openChestModal() {
   list.querySelectorAll('.chest-item-take').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
-      const item = CHEST_ITEMS.find(i => i.id === id);
+      const item = itemSource.find(i => i.id === id);
       if (!item || item.taken) return;
       if (addToInventory(item)) {
         item.taken = true;
         btn.closest('.chest-item').remove();
-        if (CHEST_ITEMS.every(i => i.taken)) {
+        if (itemSource.every(i => i.taken)) {
           list.innerHTML = '<p style="color:#999;text-align:center;padding:16px 0;font-style:italic;margin:0;">This chest is empty.</p>';
           document.getElementById('take-all-btn').style.display = 'none';
         }
@@ -2495,7 +2767,8 @@ function addToInventory(item) {
 }
 
 function takeAllItems() {
-  CHEST_ITEMS.forEach(item => {
+  const itemSource = ROOMS[roomIdx].chestItems || CHEST_ITEMS;
+  itemSource.forEach(item => {
     if (!item.taken) {
       if (addToInventory(item)) item.taken = true;
     }
@@ -2837,6 +3110,43 @@ function update(dt) {
         startTransition(8, sp.x, sp.y);
         return;
       }
+      // ── new sub-cave doors ─────────────────────────────────────
+      if (tile === T.DOOR_C2 && roomIdx === 9) {
+        const sp = ROOMS[10].entryFromCave1;
+        startTransition(10, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_2C && roomIdx === 10) {
+        const sp = ROOMS[9].entryFromCave2;
+        startTransition(9, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_C3 && roomIdx === 9) {
+        const sp = ROOMS[11].entryFromCave1;
+        startTransition(11, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_3C && roomIdx === 11) {
+        const sp = ROOMS[9].entryFromCave3;
+        startTransition(9, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_C4 && roomIdx === 9) {
+        const sp = ROOMS[12].entryFromCave1;
+        startTransition(12, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_4C && roomIdx === 12) {
+        const sp = ROOMS[9].entryFromCave4;
+        startTransition(9, sp.x, sp.y);
+        return;
+      }
+      // ── pitfall trap – teleport player back to room entry ──────
+      if (tile === T.PITFALL) {
+        const sp = ROOMS[roomIdx].entryFromCave1 || ROOMS[roomIdx].playerSpawn;
+        startTransition(roomIdx, sp.x, sp.y);
+        return;
+      }
 
       // next path step
       if (player.path.length > 0) {
@@ -2986,7 +3296,61 @@ function render() {
     }
   }
 
-  // ── shrub fiery slash animation ──────────────────────────────
+  // ── cave pool animation (Room 11) ───────────────────────────
+  if (roomIdx === 11) {
+    const t = Date.now() / 1000;
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if (room.map[row][col] === T.CAVE_POOL) {
+          const px2 = col * TILE, py2 = row * TILE;
+          const cx2 = px2 + TILE / 2, cy2 = py2 + TILE / 2;
+          ctx.save();
+          // swirling blue gradient
+          const ang = t * 1.2 + (col * 0.4 + row * 0.5);
+          const gx = cx2 + Math.cos(ang) * 6;
+          const gy = cy2 + Math.sin(ang) * 6;
+          const grad = ctx.createRadialGradient(gx, gy, 1, cx2, cy2, TILE * 0.9);
+          grad.addColorStop(0, 'rgba(80,160,255,0.75)');
+          grad.addColorStop(0.4, 'rgba(30,90,200,0.55)');
+          grad.addColorStop(1, 'rgba(10,40,140,0.20)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(px2, py2, TILE, TILE);
+          // ripple arcs
+          const ripR = 8 + 4 * Math.sin(t * 2.5 + col + row);
+          ctx.strokeStyle = `rgba(120,200,255,${0.18 + 0.10 * Math.sin(t + col)})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, ripR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.lineWidth = 1;
+          ctx.restore();
+        }
+      }
+    }
+    // overall blue glow overlay for the pool room
+    ctx.fillStyle = 'rgba(0,20,60,0.18)';
+    ctx.fillRect(0, 0, canvas.width, GAME_H);
+  }
+
+  // ── cream mushroom glow overlay ──────────────────────────────
+  if (roomIdx === 10 || roomIdx === 11 || roomIdx === 12) {
+    const t = Date.now() / 800;
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if (room.map[row][col] === T.CREAM_MUSH) {
+          const gx2 = col * TILE + TILE / 2;
+          const gy2 = row * TILE + TILE / 2 - 4;
+          const pulse = 0.30 + 0.15 * Math.sin(t + col * 1.3);
+          const glow = ctx.createRadialGradient(gx2, gy2, 2, gx2, gy2, TILE * 1.1);
+          glow.addColorStop(0, `rgba(255,255,230,${pulse})`);
+          glow.addColorStop(1, 'rgba(255,255,200,0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(col * TILE - TILE, row * TILE - TILE, TILE * 3, TILE * 3);
+        }
+      }
+    }
+  }
+
   if (shrubAnimation) {
     const sx = shrubAnimation.col * TILE;
     const sy = shrubAnimation.row * TILE;
@@ -3070,6 +3434,12 @@ function render() {
     if (tile === T.DOOR_CED && roomIdx === 8) drawHint('Enter ▲ Deep Forest');
     if (tile === T.CAVE_OPEN && roomIdx === 8) drawHint('Enter ▼ Cave');
     if (tile === T.CAVE_BACK && roomIdx === 9) drawHint('Enter ▲ Cave Entrance');
+    if (tile === T.DOOR_C2 && roomIdx === 9)  drawHint('Enter ▼ Spike Maze');
+    if (tile === T.DOOR_C3 && roomIdx === 9)  drawHint('Enter ▼ Cave Pool');
+    if (tile === T.DOOR_C4 && roomIdx === 9)  drawHint('Enter ▼ Skeleton Den');
+    if (tile === T.DOOR_2C && roomIdx === 10) drawHint('Enter ▲ Cave');
+    if (tile === T.DOOR_3C && roomIdx === 11) drawHint('Enter ▲ Cave');
+    if (tile === T.DOOR_4C && roomIdx === 12) drawHint('Enter ▲ Cave');
   }
 
   // ── hotbar ──────────────────────────────────────────────────
