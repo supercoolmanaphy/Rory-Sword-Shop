@@ -20,4 +20,3 @@ export async function fetchProduct(id) {
 export async function updateProductStock(id, inStock) {
   await updateDoc(doc(db, "products", id), { inStock });
 }
-
