@@ -107,6 +107,31 @@
       font-size: 16px;
       line-height: 1.5;
     }
+
+    .toggle-stock {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 5px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .toggle-stock:hover {
+      background-color: #c82333;
+    }
+
+    .toggle-stock.in-stock {
+      background-color: #ffc107;
+      color: #212529;
+    }
+
+    .toggle-stock.in-stock:hover {
+      background-color: #e0a800;
+    }
   </style>
 </head>
 <body>
@@ -131,6 +156,7 @@
     </p>
 
     <button class="add-to-cart">Add to Cart</button>
+    <button class="toggle-stock">Mark In Stock</button>
 
     <h3>More Images</h3>
     <div class="gallery">
@@ -145,9 +171,13 @@
 
 <script src="cart.js"></script>
 <script type="module">
-  import { fetchProduct } from './products.js';
+  import { fetchProduct, updateProductStock } from './products.js';
+  import { auth, db } from './firebase.js';
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const btn = document.querySelector('.add-to-cart');
+  const toggleBtn = document.querySelector('.toggle-stock');
   const cartCount = document.getElementById('cart-count');
 
   const mainImg = document.querySelector('.main-img');
@@ -165,6 +195,7 @@
       btn.classList.add('in-cart');
       return;
     }
+    btn.disabled = false;
     const inCart = getCart().some(i => i.id === PRODUCT.id);
     if (inCart) {
       btn.textContent = '✓ In Cart — Remove';
@@ -172,6 +203,16 @@
     } else {
       btn.textContent = 'Add to Cart';
       btn.classList.remove('in-cart');
+    }
+  }
+
+  function updateToggleBtn(PRODUCT) {
+    if (PRODUCT.inStock) {
+      toggleBtn.textContent = 'Mark Out of Stock';
+      toggleBtn.classList.remove('in-stock');
+    } else {
+      toggleBtn.textContent = 'Mark In Stock';
+      toggleBtn.classList.add('in-stock');
     }
   }
 
@@ -183,19 +224,37 @@
     updateBtn(product);
     updateCartCount();
 
-    if (product.inStock) {
-      btn.addEventListener('click', () => {
-        let cart = getCart();
-        if (cart.some(i => i.id === product.id)) {
-          cart = cart.filter(i => i.id !== product.id);
-        } else {
-          cart.push({ id: product.id, name: product.name, price: product.price, image: 'images/axe3.jpg' });
-        }
-        saveCart(cart);
-        updateBtn(product);
-        updateCartCount();
-      });
-    }
+    btn.addEventListener('click', () => {
+      if (!product.inStock) return;
+      let cart = getCart();
+      if (cart.some(i => i.id === product.id)) {
+        cart = cart.filter(i => i.id !== product.id);
+      } else {
+        cart.push({ id: product.id, name: product.name, price: product.price, image: 'images/axe3.jpg' });
+      }
+      saveCart(cart);
+      updateBtn(product);
+      updateCartCount();
+    });
+
+    toggleBtn.addEventListener('click', async () => {
+      const newStock = !product.inStock;
+      await updateProductStock(product.id, newStock);
+      product.inStock = newStock;
+      updateBtn(product);
+      updateToggleBtn(product);
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { toggleBtn.style.display = 'none'; return; }
+      const adminSnap = await getDoc(doc(db, 'admins', user.uid));
+      if (adminSnap.exists()) {
+        toggleBtn.style.display = 'inline-block';
+        updateToggleBtn(product);
+      } else {
+        toggleBtn.style.display = 'none';
+      }
+    });
   }
 </script>
 

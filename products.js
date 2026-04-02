@@ -1,5 +1,5 @@
 import { db } from "./firebase.js";
-import { collection, doc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, doc, getDocs, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 export async function fetchProducts() {
   const snapshot = await getDocs(collection(db, "products"));
@@ -16,3 +16,8 @@ export async function fetchProduct(id) {
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() };
 }
+
+export async function updateProductStock(id, inStock) {
+  await updateDoc(doc(db, "products", id), { inStock });
+}
+
