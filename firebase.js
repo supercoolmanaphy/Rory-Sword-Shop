@@ -16,4 +16,4 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Replace with the email address of your admin account
-export const ADMIN_EMAIL = 'admin@example.com';
+export const ADMIN_EMAIL = 'supercoolmanaphy@gmail.com';
