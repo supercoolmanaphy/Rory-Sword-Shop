@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="images/sword5.jpg">
+  <title>Admin — Rory's Sword Shop</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+      position: relative;
+    }
+
+    .sign-out-btn {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sign-out-btn:hover {
+      background-color: #c82333;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 15px;
+      text-decoration: none;
+      color: blue;
+    }
+
+    .admin-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .admin-box h2 {
+      margin-top: 0;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 14px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .product-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .product-row img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-info h3 {
+      margin: 0 0 4px;
+      font-size: 17px;
+    }
+
+    .product-info p {
+      margin: 0;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .stock-badge {
+      font-size: 13px;
+      font-weight: bold;
+      padding: 3px 9px;
+      border-radius: 12px;
+      margin-top: 5px;
+      display: inline-block;
+    }
+
+    .stock-badge.in-stock {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .stock-badge.out-of-stock {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .toggle-btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .toggle-btn.mark-out {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .toggle-btn.mark-out:hover {
+      background-color: #c82333;
+    }
+
+    .toggle-btn.mark-in {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .toggle-btn.mark-in:hover {
+      background-color: #218838;
+    }
+
+    .toggle-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #status-msg {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #555;
+      min-height: 18px;
+    }
+
+    .loading-msg {
+      text-align: center;
+      color: #777;
+      padding: 30px 0;
+    }
+
+    .error-msg {
+      color: #dc3545;
+      text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Admin Panel
+    <button class="sign-out-btn" id="sign-out-btn">Sign Out</button>
+  </header>
+
+  <div class="container">
+    <a href="index.html" class="back">← Back to Shop</a>
+
+    <div class="admin-box">
+      <h2>Stock Management</h2>
+      <div id="product-list"><p class="loading-msg">Loading products…</p></div>
+      <p id="status-msg"></p>
+    </div>
+  </div>
+
+<script type="module">
+  import { ADMIN_EMAIL } from './admin-config.js';
+  import { fetchProducts, updateProductStock } from './products.js';
+
+  // Auth guard — redirect to login if not verified
+  if (sessionStorage.getItem('adminVerified') !== 'true' ||
+      sessionStorage.getItem('adminEmail') !== ADMIN_EMAIL) {
+    window.location.href = 'login.html?next=admin.html';
+  }
+
+  document.getElementById('sign-out-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('adminVerified');
+    sessionStorage.removeItem('adminEmail');
+    window.location.href = 'index.html';
+  });
+
+  const list = document.getElementById('product-list');
+  const statusMsg = document.getElementById('status-msg');
+
+  const PRODUCT_IMAGES = {
+    product1: 'images/sword1.jpg',
+    product2: 'images/arrows2.jpg',
+    product3: 'images/sword3.jpg',
+    product4: 'images/axe3.jpg'
+  };
+
+  function renderProducts(products) {
+    list.innerHTML = '';
+    if (products.length === 0) {
+      list.innerHTML = '<p class="loading-msg">No products found in the database.</p>';
+      return;
+    }
+
+    products.forEach(product => {
+      const row = document.createElement('div');
+      row.className = 'product-row';
+
+      const img = document.createElement('img');
+      img.src = PRODUCT_IMAGES[product.id] || 'images/sword1.jpg';
+      img.alt = product.name;
+
+      const info = document.createElement('div');
+      info.className = 'product-info';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = product.name;
+
+      const price = document.createElement('p');
+      price.textContent = `$${product.price.toFixed(2)}`;
+
+      const badge = document.createElement('span');
+      badge.className = `stock-badge ${product.inStock ? 'in-stock' : 'out-of-stock'}`;
+      badge.textContent = product.inStock ? 'In Stock' : 'Out of Stock';
+
+      info.appendChild(h3);
+      info.appendChild(price);
+      info.appendChild(badge);
+
+      const btn = document.createElement('button');
+      btn.className = `toggle-btn ${product.inStock ? 'mark-out' : 'mark-in'}`;
+      btn.textContent = product.inStock ? 'Mark Out of Stock' : 'Mark In Stock';
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        statusMsg.textContent = 'Saving…';
+        try {
+          const newStock = !product.inStock;
+          await updateProductStock(product.id, newStock);
+          product.inStock = newStock;
+          badge.className = `stock-badge ${newStock ? 'in-stock' : 'out-of-stock'}`;
+          badge.textContent = newStock ? 'In Stock' : 'Out of Stock';
+          btn.className = `toggle-btn ${newStock ? 'mark-out' : 'mark-in'}`;
+          btn.textContent = newStock ? 'Mark Out of Stock' : 'Mark In Stock';
+          statusMsg.textContent = `✓ ${product.name} updated.`;
+        } catch (err) {
+          statusMsg.textContent = `Error: ${err.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      row.appendChild(img);
+      row.appendChild(info);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+  }
+
+  try {
+    const products = await fetchProducts();
+    renderProducts(products);
+  } catch (err) {
+    list.innerHTML = `<p class="error-msg">Could not load products: ${err.message}</p>`;
+  }
+</script>
+
+<script src="cursor.js"></script>
+</body>
+</html>

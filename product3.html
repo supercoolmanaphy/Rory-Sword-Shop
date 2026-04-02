@@ -140,7 +140,9 @@
 </div>
 
 <script src="cart.js"></script>
-<script>
+<script type="module">
+  import { fetchProduct } from './products.js';
+
   const PRODUCT = { id: 'product3', name: 'Bronze Knife', price: 75.00, image: 'images/sword3.jpg' };
 
   const btn = document.querySelector('.add-to-cart');
@@ -154,7 +156,14 @@
 
   function updateCartCount() { cartCount.textContent = getCart().length; }
 
-  function updateBtn() {
+  function updateBtn(inStock) {
+    if (!inStock) {
+      btn.textContent = 'Out of Stock';
+      btn.disabled = true;
+      btn.classList.add('in-cart');
+      return;
+    }
+    btn.disabled = false;
     const inCart = getCart().some(i => i.id === PRODUCT.id);
     if (inCart) {
       btn.textContent = '✓ In Cart — Remove';
@@ -165,7 +174,19 @@
     }
   }
 
+  let inStock = true;
+  try {
+    const product = await fetchProduct(PRODUCT.id);
+    if (product) inStock = product.inStock;
+  } catch (err) {
+    console.error('Could not fetch stock status:', err);
+  }
+
+  updateBtn(inStock);
+  updateCartCount();
+
   btn.addEventListener('click', () => {
+    if (!inStock) return;
     let cart = getCart();
     if (cart.some(i => i.id === PRODUCT.id)) {
       cart = cart.filter(i => i.id !== PRODUCT.id);
@@ -173,12 +194,9 @@
       cart.push(PRODUCT);
     }
     saveCart(cart);
-    updateBtn();
+    updateBtn(inStock);
     updateCartCount();
   });
-
-  updateBtn();
-  updateCartCount();
 </script>
 
 </body>
