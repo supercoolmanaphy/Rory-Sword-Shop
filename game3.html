@@ -97,9 +97,11 @@ const MIN_BITES            = 2;
 const MAX_EXTRA_BITES      = 3;
 
 // ── tile types ───────────────────────────────────────────────────
-const T_WALL  = 0;
-const T_FLOOR = 1;
-const T_ROCK  = 2;
+const T_WALL      = 0;
+const T_FLOOR     = 1;
+const T_ROCK      = 2;
+const T_RED_ROCK  = 3;  // hellhound dungeon stones
+const T_SPIKE_ROCK = 4; // wizard dungeon stones
 
 // ── helper: filled rect ──────────────────────────────────────────
 function fr(x, y, w, h, color) {
@@ -120,16 +122,42 @@ function makeMap() {
 const DUNGEONS = {
   spider: (() => {
     const map = makeMap();
+    // maze of stone rows – player must snake through the gaps
+    // Row 4: gap at cols 11-15
+    for (let c = 1; c <= 10; c++) map[4][c] = T_ROCK;
+    for (let c = 16; c <= 28; c++) map[4][c] = T_ROCK;
+    // Row 7: gap at cols 1-3 (left edge)
+    for (let c = 4; c <= 28; c++) map[7][c] = T_ROCK;
+    // Row 10: gap at cols 23-28 (right edge)
+    for (let c = 1; c <= 22; c++) map[10][c] = T_ROCK;
     return { map, bgColor: '#120a1a', floorColor: '#1e1428', wallColor: '#302040' };
   })(),
   wizard: (() => {
     const map = makeMap();
-    // rocks as cover obstacles (blocking fireballs)
-    for (const [c, r] of [[6,9],[11,11],[18,9],[23,11]]) map[r][c] = T_ROCK;
+    // spiked stone maze rows
+    // Row 5: gap at cols 11-19
+    for (let c = 1; c <= 10; c++) map[5][c] = T_SPIKE_ROCK;
+    for (let c = 20; c <= 28; c++) map[5][c] = T_SPIKE_ROCK;
+    // Row 9: gap at cols 14-20, isolated spike in middle of gap
+    for (let c = 1; c <= 13; c++) map[9][c] = T_SPIKE_ROCK;
+    for (let c = 21; c <= 28; c++) map[9][c] = T_SPIKE_ROCK;
+    map[9][17] = T_SPIKE_ROCK;
+    // Isolated spikes for cover / extra challenge
+    map[11][5]  = T_SPIKE_ROCK;
+    map[11][24] = T_SPIKE_ROCK;
+    map[7][14]  = T_SPIKE_ROCK;
     return { map, bgColor: '#080a1a', floorColor: '#121828', wallColor: '#202840' };
   })(),
   hellhound: (() => {
     const map = makeMap();
+    // red stone maze rows
+    // Row 4: gap at cols 13-19
+    for (let c = 1; c <= 12; c++) map[4][c] = T_RED_ROCK;
+    for (let c = 20; c <= 28; c++) map[4][c] = T_RED_ROCK;
+    // Row 7: gap at cols 21-28 (right edge)
+    for (let c = 1; c <= 20; c++) map[7][c] = T_RED_ROCK;
+    // Row 10: gap at cols 1-7 (left edge)
+    for (let c = 8; c <= 28; c++) map[10][c] = T_RED_ROCK;
     return { map, bgColor: '#1a0303', floorColor: '#1e0a0a', wallColor: '#3a1010' };
   })(),
 };
@@ -213,6 +241,9 @@ let whirlwinds   = []; // { col, row, phase:'warn'|'active', timer, lifeTimer, r
 let swordAnim      = null; // { col, row, timer }
 let attackCooldown = 0;
 
+// ── pushback animation ────────────────────────────────────────────
+let pushbackAnim = null; // { fromX, fromY, toX, toY, timer, dur }
+
 // ── footsteps ────────────────────────────────────────────────────
 let footsteps = []; // { x, y, facing, age }
 
@@ -264,7 +295,7 @@ document.addEventListener('keydown', e => {
   // ── battle: immediate single-tap movement ────────────────────
   if (gameState === 'battle') {
     const dir = DIRS[lk];
-    if (dir && !player.moving && !player.trapped) {
+    if (dir && !player.moving && !player.trapped && !pushbackAnim) {
       let [dx, dy, face] = dir;
       if (player.confused) {
         [dx, dy, face] = CONFUSED_DIRS[Math.floor(Math.random() * 4)];
@@ -342,6 +373,7 @@ function startBattle(monsterKey) {
   whirlwinds  = [];
   footsteps   = [];
   swordAnim   = null;
+  pushbackAnim = null;
   attackCooldown = 0;
   damageFlash = 0;
 
@@ -392,15 +424,17 @@ function launchPlayer() {
   else if (Math.abs(dx) >= Math.abs(dy)) { ldx = dx > 0 ? 1 : -1; }
   else { ldy = dy > 0 ? 1 : -1; }
   let newX = player.tileX, newY = player.tileY;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     const nx = newX + ldx, ny = newY + ldy;
     if (isWalkable(nx, ny)) { newX = nx; newY = ny; }
     else break;
   }
+  const fromPxX = player.pxX;
+  const fromPxY = player.pxY;
   player.tileX = newX; player.tileY = newY;
   player.targetX = newX; player.targetY = newY;
-  player.pxX = newX * TILE; player.pxY = newY * TILE;
   player.moving = false;
+  pushbackAnim = { fromX: fromPxX, fromY: fromPxY, toX: newX * TILE, toY: newY * TILE, timer: 0, dur: 0.35 };
   damageFlash = 0.5;
 }
 
@@ -414,8 +448,11 @@ function triggerMonsterAttack() {
     if (Math.random() < 0.5) spawnCobwebs();
     else spawnWhirlwinds();
   } else if (key === 'wizard') {
-    if (Math.random() < 0.55) spawnFireball();
-    else spawnFireWave();
+    // two attacks per trigger
+    for (let i = 0; i < 2; i++) {
+      if (Math.random() < 0.55) spawnFireball();
+      else spawnFireWave();
+    }
   } else if (key === 'hellhound') {
     spawnBites();
   }
@@ -489,6 +526,10 @@ function spawnBites() {
 }
 
 // ── check if player tile is protected from fireball ──────────────
+function isSolidObstacle(t) {
+  return t === T_ROCK || t === T_SPIKE_ROCK;
+}
+
 function isProtected(fb) {
   const map  = currentDungeon.map;
   const pc   = player.tileX;
@@ -496,14 +537,14 @@ function isProtected(fb) {
   if (fb.type === 'row') {
     if (pr !== fb.index) return true;
     if (fb.dir === 'left') {
-      for (let c = 0; c < pc; c++) if (map[pr][c] === T_ROCK) return true;
+      for (let c = 0; c < pc; c++) if (isSolidObstacle(map[pr][c])) return true;
     } else {
-      for (let c = pc + 1; c < COLS; c++) if (map[pr][c] === T_ROCK) return true;
+      for (let c = pc + 1; c < COLS; c++) if (isSolidObstacle(map[pr][c])) return true;
     }
     return false;
   } else { // col
     if (pc !== fb.index) return true;
-    for (let r = 0; r < pr; r++) if (map[r][pc] === T_ROCK) return true;
+    for (let r = 0; r < pr; r++) if (isSolidObstacle(map[r][pc])) return true;
     return false;
   }
 }
@@ -557,6 +598,20 @@ function update(dt) {
     }
   }
 
+  // ── pushback animation ────────────────────────────────────────
+  if (pushbackAnim) {
+    pushbackAnim.timer += dt;
+    const tp = Math.min(1, pushbackAnim.timer / pushbackAnim.dur);
+    const et = 1 - Math.pow(1 - tp, 3); // ease-out cubic
+    player.pxX = pushbackAnim.fromX + (pushbackAnim.toX - pushbackAnim.fromX) * et;
+    player.pxY = pushbackAnim.fromY + (pushbackAnim.toY - pushbackAnim.fromY) * et;
+    if (tp >= 1) {
+      player.pxX = pushbackAnim.toX;
+      player.pxY = pushbackAnim.toY;
+      pushbackAnim = null;
+    }
+  }
+
   // ── attack cooldown ──────────────────────────────────────────
   if (attackCooldown > 0) attackCooldown -= dt;
 
@@ -601,7 +656,7 @@ function update(dt) {
       checkCobwebCollision();
       checkWhirlwindCollision();
     }
-  } else if (!player.trapped) {
+  } else if (!player.trapped && !pushbackAnim) {
     // continuous key movement
     for (const [k, [dx, dy, face]] of Object.entries(DIRS)) {
       if (!keys[k]) continue;
@@ -870,6 +925,54 @@ function drawTile(t, col, row) {
     ctx.beginPath();
     ctx.ellipse(x + TILE / 2 - 5, y + TILE / 2 - 5, 5, 4, -0.5, 0, Math.PI * 2);
     ctx.fill();
+  } else if (t === T_RED_ROCK) {
+    fr(x, y, TILE, TILE, dng.floorColor);
+    // red-tinted rock for hellhound dungeon
+    ctx.fillStyle = '#662222';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2, y + TILE / 2 + 2, TILE / 2 - 4, TILE / 2 - 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#993333';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2 - 3, y + TILE / 2 - 2, TILE / 2 - 8, TILE / 2 - 10, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#cc5555';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2 - 5, y + TILE / 2 - 5, 5, 4, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (t === T_SPIKE_ROCK) {
+    fr(x, y, TILE, TILE, dng.floorColor);
+    // stone base
+    ctx.fillStyle = '#555566';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2, y + TILE / 2 + 4, TILE / 2 - 5, TILE / 2 - 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#777788';
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2 - 2, y + TILE / 2 + 1, TILE / 2 - 9, TILE / 2 - 12, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    // three sharp spikes pointing upward
+    ctx.fillStyle = '#aabbcc';
+    for (let sp = 0; sp < 3; sp++) {
+      const sx2 = x + 5 + sp * 11;
+      ctx.beginPath();
+      ctx.moveTo(sx2,     y + TILE / 2 + 2);
+      ctx.lineTo(sx2 + 6, y + TILE / 2 + 2);
+      ctx.lineTo(sx2 + 3, y + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // spike highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    for (let sp = 0; sp < 3; sp++) {
+      const sx2 = x + 5 + sp * 11;
+      ctx.beginPath();
+      ctx.moveTo(sx2 + 1, y + TILE / 2 + 2);
+      ctx.lineTo(sx2 + 3, y + 7);
+      ctx.lineTo(sx2 + 2, y + TILE / 2 + 2);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 }
 
@@ -1052,7 +1155,7 @@ function drawFireball(fb) {
       ctx.fillRect(0, y, GAME_W, TILE);
       // flame flickers
       for (let c = 0; c < COLS; c++) {
-        if (map[fb.index][c] === T_ROCK) continue;
+        if (isSolidObstacle(map[fb.index][c])) continue;
         const fx2 = c * TILE + TILE / 2;
         const fh  = 16 + 10 * Math.abs(Math.sin(t + c * 0.7));
         ctx.fillStyle = 'rgba(255,220,60,0.7)';
@@ -1086,7 +1189,7 @@ function drawFireball(fb) {
       ctx.fillStyle = fireGrad;
       ctx.fillRect(x, 0, TILE, GAME_H);
       for (let r = 0; r < ROWS; r++) {
-        if (map[r][fb.index] === T_ROCK) continue;
+        if (isSolidObstacle(map[r][fb.index])) continue;
         const fy2 = r * TILE + TILE / 2;
         const fw2 = 12 + 8 * Math.abs(Math.sin(t + r * 0.6));
         ctx.fillStyle = 'rgba(255,220,60,0.7)';
@@ -1242,11 +1345,11 @@ function drawSpider(cx2, cy2, t) {
   ctx.ellipse(cx2, cy2 + s * 0.5, s * 0.7, s * 0.18, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // legs (8 legs)
+  // legs (6 legs, 3 per side)
   ctx.strokeStyle = '#1a1020';
   ctx.lineWidth   = 3;
-  const legAngs = [-0.6, -0.35, -0.1, 0.1, 0.6, 0.85, 1.1, 1.35]
-    .map((a, i) => ({ side: i < 4 ? -1 : 1, baseAng: a }));
+  const legAngs = [-0.5, -0.05, 0.35, 0.5, 0.9, 1.3]
+    .map((a, i) => ({ side: i < 3 ? -1 : 1, baseAng: a }));
   for (const { side, baseAng } of legAngs) {
     const wa = Math.sin(t + baseAng * 3) * 0.12;
     const startX = cx2 + side * s * 0.3;
