@@ -134,30 +134,56 @@ const DUNGEONS = {
   })(),
   wizard: (() => {
     const map = makeMap();
-    // spiked stone maze rows
-    // Row 5: gap at cols 11-19
-    for (let c = 1; c <= 10; c++) map[5][c] = T_SPIKE_ROCK;
-    for (let c = 20; c <= 28; c++) map[5][c] = T_SPIKE_ROCK;
-    // Row 9: gap at cols 14-20, isolated spike in middle of gap
-    for (let c = 1; c <= 13; c++) map[9][c] = T_SPIKE_ROCK;
-    for (let c = 21; c <= 28; c++) map[9][c] = T_SPIKE_ROCK;
-    map[9][17] = T_SPIKE_ROCK;
-    // Isolated spikes for cover / extra challenge
-    map[11][5]  = T_SPIKE_ROCK;
-    map[11][24] = T_SPIKE_ROCK;
-    map[7][14]  = T_SPIKE_ROCK;
+    // spiked stone maze rows – more complex snaking path
+    // Row 3: gap at cols 1-5 (left edge) + spike pillar at col 9
+    for (let c = 6; c <= 28; c++) map[3][c] = T_SPIKE_ROCK;
+    map[3][12] = T_FLOOR; // tiny extra crack
+    // Row 6: gap at cols 22-28 (right edge) + blocker spike at col 18
+    for (let c = 1; c <= 21; c++) map[6][c] = T_SPIKE_ROCK;
+    map[6][15] = T_SPIKE_ROCK; // redundant (already set), keep row solid left of 22
+    // Row 9: gap at cols 10-15, spike spike at col 12
+    for (let c = 1; c <= 9; c++)  map[9][c] = T_SPIKE_ROCK;
+    for (let c = 16; c <= 28; c++) map[9][c] = T_SPIKE_ROCK;
+    map[9][12] = T_SPIKE_ROCK; // spike inside gap – forces sidestep
+    // Row 12: gap at cols 1-6 (left edge)
+    for (let c = 7; c <= 28; c++) map[12][c] = T_SPIKE_ROCK;
+    map[12][20] = T_FLOOR; // second tiny crack
+    // Scattered isolated spikes for extra pressure
+    map[4][10]  = T_SPIKE_ROCK;
+    map[4][20]  = T_SPIKE_ROCK;
+    map[7][5]   = T_SPIKE_ROCK;
+    map[7][24]  = T_SPIKE_ROCK;
+    map[8][14]  = T_SPIKE_ROCK;
+    map[10][8]  = T_SPIKE_ROCK;
+    map[10][22] = T_SPIKE_ROCK;
+    map[11][16] = T_SPIKE_ROCK;
     return { map, bgColor: '#080a1a', floorColor: '#121828', wallColor: '#202840' };
   })(),
   hellhound: (() => {
     const map = makeMap();
-    // red stone maze rows
-    // Row 4: gap at cols 13-19
-    for (let c = 1; c <= 12; c++) map[4][c] = T_RED_ROCK;
-    for (let c = 20; c <= 28; c++) map[4][c] = T_RED_ROCK;
-    // Row 7: gap at cols 21-28 (right edge)
-    for (let c = 1; c <= 20; c++) map[7][c] = T_RED_ROCK;
-    // Row 10: gap at cols 1-7 (left edge)
-    for (let c = 8; c <= 28; c++) map[10][c] = T_RED_ROCK;
+    // red stone maze rows – more complex overlapping barriers
+    // Row 3: gap at cols 20-28 (right edge) + inner spike at col 24
+    for (let c = 1; c <= 19; c++) map[3][c] = T_RED_ROCK;
+    map[3][23] = T_RED_ROCK; // blocker inside gap
+    // Row 6: gap at cols 1-6 (left edge) + pillar at col 4
+    for (let c = 7; c <= 28; c++) map[6][c] = T_RED_ROCK;
+    map[6][4] = T_RED_ROCK; // blocker inside gap
+    // Row 9: gap at cols 12-18 + blocker at col 15
+    for (let c = 1; c <= 11; c++)  map[9][c] = T_RED_ROCK;
+    for (let c = 19; c <= 28; c++) map[9][c] = T_RED_ROCK;
+    map[9][15] = T_RED_ROCK; // spike inside gap – forces sidestep
+    // Row 12: gap at cols 22-28 (right edge)
+    for (let c = 1; c <= 21; c++) map[12][c] = T_RED_ROCK;
+    map[12][10] = T_FLOOR; // tiny crack breaks left half
+    // Isolated red rock boulders for extra obstruction
+    map[4][14]  = T_RED_ROCK;
+    map[5][8]   = T_RED_ROCK;
+    map[5][22]  = T_RED_ROCK;
+    map[7][16]  = T_RED_ROCK;
+    map[8][5]   = T_RED_ROCK;
+    map[8][25]  = T_RED_ROCK;
+    map[10][11] = T_RED_ROCK;
+    map[11][20] = T_RED_ROCK;
     return { map, bgColor: '#1a0303', floorColor: '#1e0a0a', wallColor: '#3a1010' };
   })(),
 };
@@ -448,8 +474,8 @@ function triggerMonsterAttack() {
     if (Math.random() < 0.5) spawnCobwebs();
     else spawnWhirlwinds();
   } else if (key === 'wizard') {
-    // two attacks per trigger
-    for (let i = 0; i < 2; i++) {
+    // four attacks per trigger
+    for (let i = 0; i < 4; i++) {
       if (Math.random() < 0.55) spawnFireball();
       else spawnFireWave();
     }
