@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="images/sword5.jpg">
+  <title>Business Plan – Rory's Sword Shop</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+      position: relative;
+    }
+
+    .header-cart {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+    }
+
+    .header-cart:hover {
+      color: #ccc;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: blue;
+    }
+
+    .brand-footer {
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .brand-footer img {
+      width: 160px;
+      height: auto;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Rory's Sword Shop
+    <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
+  </header>
+
+  <div class="container">
+    <a href="index.html" class="back">← Back to Shop</a>
+    <h2>Business Plan</h2>
+  </div>
+
+  <div class="brand-footer">
+    <img src="images/sword4.jpg" alt="Rory's Sword Shop logo">
+  </div>
+
+</body>
+
+<script src="cart.js"></script>
+<script>
+  document.getElementById('cart-count').textContent = getCart().length;
+</script>
+
+<script src="cursor.js"></script>
+</html>

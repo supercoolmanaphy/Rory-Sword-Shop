@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="images/sword5.jpg">
+  <title>Games – Rory's Sword Shop</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+      position: relative;
+    }
+
+    .header-cart {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+    }
+
+    .header-cart:hover {
+      color: #ccc;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: blue;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .game-card {
+      background: white;
+      border-radius: 10px;
+      padding: 25px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-decoration: none;
+      color: black;
+      display: block;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-align: center;
+    }
+
+    .game-card:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .game-card .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .game-card h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .game-card p {
+      margin: 0;
+      color: #555;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .brand-footer {
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .brand-footer img {
+      width: 160px;
+      height: auto;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Rory's Sword Shop
+    <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
+  </header>
+
+  <div class="container">
+    <a href="index.html" class="back">← Back to Shop</a>
+    <h2>Games</h2>
+
+    <div class="games-grid">
+
+      <a href="game.html" class="game-card">
+        <div class="icon">⚔️</div>
+        <h2>Sword Slash</h2>
+        <p>Test your reflexes in this fast-paced slashing game. Click to slash enemies before they reach you!</p>
+      </a>
+
+      <a href="game2.html" class="game-card">
+        <div class="icon">🛡️</div>
+        <h2>Knight's Quest</h2>
+        <p>Explore a dungeon as a brave knight. Navigate rooms, collect items, and battle fearsome foes on your quest.</p>
+      </a>
+
+      <a href="game3.html" class="game-card">
+        <div class="icon">🕸️</div>
+        <h2>Monster Battle</h2>
+        <p>Face off against terrifying monsters in turn-based combat. Will you survive the onslaught?</p>
+      </a>
+
+    </div>
+  </div>
+
+  <div class="brand-footer">
+    <img src="images/sword4.jpg" alt="Rory's Sword Shop logo">
+  </div>
+
+</body>
+
+<script src="cart.js"></script>
+<script>
+  document.getElementById('cart-count').textContent = getCart().length;
+</script>
+
+<script src="cursor.js"></script>
+</html>
