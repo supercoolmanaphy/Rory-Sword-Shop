@@ -353,7 +353,12 @@ function isWalkable(col, row) {
   if (!currentDungeon) return false;
   if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
   const t = currentDungeon.map[row][col];
-  return t === T_FLOOR;
+  if (t !== T_FLOOR) return false;
+  // block the monster's 2×2 tile footprint so the player can't walk inside it
+  if (monster.hp > 0 &&
+      col >= monster.tileX && col <= monster.tileX + 1 &&
+      row >= monster.tileY && row <= monster.tileY + 1) return false;
+  return true;
 }
 
 // ================================================================
@@ -443,10 +448,9 @@ function doAttack() {
     row:   player.tileY + dy,
     timer: 0,
   };
-  // player must be within 1 tile (Chebyshev) of monster centre to deal damage
-  const mx = monster.tileX + 1;
-  const my = monster.tileY + 1;
-  if (Math.abs(player.tileX - mx) > 1 || Math.abs(player.tileY - my) > 1) return;
+  // player can hit if within 1 tile of any edge of the 2×2 monster body
+  if (player.tileX < monster.tileX - 1 || player.tileX > monster.tileX + 2 ||
+      player.tileY < monster.tileY - 1 || player.tileY > monster.tileY + 2) return;
 
   if (monster.hp > 0) {
     monster.hp = Math.max(0, monster.hp - 5);
