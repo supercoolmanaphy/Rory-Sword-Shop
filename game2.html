@@ -487,6 +487,7 @@ const T = Object.freeze({
   RBED_TR:   77, // raggedy bed – top-right
   RBED_BL:   78, // raggedy bed – bottom-left
   RBED_BR:   79, // raggedy bed – bottom-right
+  SKULL_TABLE: 80, // table with skull and glowing potion bottles (non-walkable)
 });
 
 const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS,
@@ -522,7 +523,8 @@ const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
         DOOR_H1:DH1, DOOR_1H:D1H, DOOR_H2:DH2, DOOR_2H:D2H, DOOR_H3:DH3, DOOR_3H:D3H,
         TABLE:TBL, STOOL:STL, RUG:RG, WASH_BASIN:WSB, BOOKSHELF:BKS,
         CANDELABRA:CDL, POTION_TABLE:PTB, WATER_BUCKET:WBK,
-        RBED_TL:RBTL, RBED_TR:RBTR, RBED_BL:RBBL, RBED_BR:RBBR } = T;
+        RBED_TL:RBTL, RBED_TR:RBTR, RBED_BL:RBBL, RBED_BR:RBBR,
+        SKULL_TABLE:SKT } = T;
 
 // ── room definitions ─────────────────────────────────────────────
 const ROOMS = [
@@ -1091,7 +1093,7 @@ const ROOMS = [
     map: [
       [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, W, W, W, W, W, W, W, W, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
       [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
-      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W,TBL,TBL, F, F,SKT,SKT,SKT, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
       [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
       [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
       [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
@@ -1409,7 +1411,7 @@ const NPCS = [
   {
     id: 'shell_dealer',
     name: 'The Dealer',
-    tileX: 14, tileY: 6,
+    tileX: 13, tileY: 3,
     room: 14,
     dialog: [
       "Psst... welcome to the Secret Blackmarket, stranger.",
@@ -1419,6 +1421,19 @@ const NPCS = [
     hairColor: '#0d0a10',
     accessory: null,
     shellgameable: true,
+  },
+  {
+    id: 'shadowy_salesman',
+    name: 'Shadowy Salesman',
+    tileX: 17, tileY: 3,
+    room: 14,
+    dialog: [
+      "You didn't find this place… and I was never here.",
+      "Everything on that table has a price. Everything. Choose wisely, stranger.",
+    ],
+    outfitColor: '#120820',
+    hairColor: '#080808',
+    accessory: 'hat_cloak',
   },
 ];
 
@@ -1443,6 +1458,7 @@ const ROOM_IMAGES = {
   11: 'images/cave3.png',
   12: 'images/Cave4.png',
   13: 'images/darktower.png',
+  14: 'images/blackmarket.png',
 };
 
 const NPC_IMAGES = {
@@ -2472,6 +2488,37 @@ function drawTile(type, col, row) {
       break;
     }
 
+    // ─ skull table (with skull and glowing potion bottles) ────────
+    case T.SKULL_TABLE: {
+      fr(x, y, TILE, TILE, '#3e2610');                      // floor
+      fr(x+2, y+6, TILE-4, TILE-14, '#6a3a10');             // table edge
+      fr(x+2, y+4, TILE-4, TILE-14, '#8a5a20');             // table top
+      // skull in center
+      fr(x+TILE/2-4, y+5, 8, 9, '#d8d0c0');                 // skull cranium
+      fr(x+TILE/2-3, y+9, 6, 5, '#d8d0c0');                 // skull jaw
+      fr(x+TILE/2-2, y+7, 2, 2, '#1a1008');                 // left eye socket
+      fr(x+TILE/2+1, y+7, 2, 2, '#1a1008');                 // right eye socket
+      fr(x+TILE/2-2, y+11, 2, 1, '#1a1008');                // tooth gap left
+      fr(x+TILE/2+1, y+11, 2, 1, '#1a1008');                // tooth gap right
+      // red potion bottle (left)
+      fr(x+5, y+5, 5, 10, '#cc2020');                       // bottle body
+      fr(x+6, y+6, 3, 3, '#ee5050');                        // highlight
+      fr(x+6, y+4, 3, 3, '#888888');                        // cork
+      // blue potion bottle (right)
+      fr(x+TILE-10, y+5, 5, 10, '#1a50cc');                 // bottle body
+      fr(x+TILE-9,  y+6, 3, 3, '#4488ee');                  // highlight
+      fr(x+TILE-9,  y+4, 3, 3, '#888888');                  // cork
+      // colored glows
+      ctx.fillStyle = 'rgba(255,50,50,0.18)';
+      ctx.fillRect(x+3, y+4, 9, TILE-12);
+      ctx.fillStyle = 'rgba(50,100,255,0.18)';
+      ctx.fillRect(x+TILE-12, y+4, 9, TILE-12);
+      // table legs
+      fr(x+3, y+TILE-8, 4, 6, '#5a3010');
+      fr(x+TILE-7, y+TILE-8, 4, 6, '#5a3010');
+      break;
+    }
+
     default:
       break;
   }
@@ -2585,6 +2632,13 @@ function drawNPC(npc) {
   } else if (npc.accessory === 'spear') {
     fr(cx+10, cy-18, 2, 28, '#8a6a30'); // spear shaft
     fr(cx+9,  cy-24, 4,  8, '#c0c0c0'); // spear tip
+  } else if (npc.accessory === 'hat_cloak') {
+    // long dark cloak flowing over shoulders
+    fr(cx-8, cy-3, 16, 22, npc.outfitColor);               // wider flowing cloak
+    // big wide-brimmed hat
+    fr(cx-12, cy-18, 24, 3, '#7a4a10');                     // wide brim
+    fr(cx-7,  cy-30, 14, 14, '#5a3008');                    // tall crown
+    fr(cx-7,  cy-18, 14, 2,  '#2a1004');                    // hat band
   }
 
   // name label above NPC
@@ -4131,27 +4185,10 @@ function render() {
     // Purple smoke tint
     ctx.fillStyle = 'rgba(40,10,60,0.18)';
     ctx.fillRect(0, 0, canvas.width, GAME_H);
-    // Table (at cols 11-18, rows 3-5 within the room)
-    const tblX = 11 * TILE, tblY = 3 * TILE;
-    const tblW = 8 * TILE, tblH = 3 * TILE;
-    ctx.fillStyle = '#2a1205';
-    ctx.fillRect(tblX, tblY, tblW, tblH);
-    ctx.fillStyle = '#3a1a08';
-    ctx.fillRect(tblX+4, tblY+4, tblW-8, tblH-8);
-    // Wood grain lines on table
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 1;
-    for (let gy = tblY + 12; gy < tblY + tblH; gy += 14) {
-      ctx.beginPath(); ctx.moveTo(tblX+4, gy); ctx.lineTo(tblX+tblW-4, gy+2); ctx.stroke();
-    }
-    // Table legs
-    ctx.fillStyle = '#1a0a04';
-    ctx.fillRect(tblX+6, tblY+tblH, 8, 12);
-    ctx.fillRect(tblX+tblW-14, tblY+tblH, 8, 12);
-    // Candle on the table
+    // Candle on the dealer's small table (col 11-12, row 2)
     const tnow = performance.now();
-    const candleX = 15 * TILE + TILE/2;
-    const candleY = 3 * TILE + 20;
+    const candleX = 12 * TILE + TILE/2;
+    const candleY = 2 * TILE + 10;
     // Candle glow (flickering)
     const flicker = 0.85 + 0.15 * Math.sin(tnow * 0.007 + Math.cos(tnow * 0.011));
     const glowGrad = ctx.createRadialGradient(candleX, candleY, 5, candleX, candleY, 100 * flicker);
