@@ -195,6 +195,8 @@
 
     /* ---- Challenge Modal ---- */
     #challenge-modal.hidden { display: none !important; }
+    /* ---- Shell Game Modal ---- */
+    #shell-modal.hidden { display: none !important; }
     .hidden { display: none; }
 
     .modal-box {
@@ -353,6 +355,39 @@
   </div>
 </div>
 
+<!-- Shell Game Modal -->
+<div id="shell-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:200;">
+  <div style="background:#0d0518;border:3px solid #6633aa;border-radius:12px;padding:24px 28px;width:680px;max-height:95vh;overflow-y:auto;box-shadow:0 0 60px rgba(120,60,200,0.4);">
+    <h3 style="margin:0 0 14px;font-size:20px;color:#cc99ff;text-align:center;letter-spacing:1px;">🎩 The Shell Game</h3>
+
+    <!-- Intro -->
+    <div id="shell-intro">
+      <p style="color:#ddd;text-align:center;font-size:14px;margin:0 0 6px;">"Watch carefully... find the ball under the right cup and win <strong style='color:#daa520'>10 gold coins</strong>!"</p>
+      <p style="color:#aaa;text-align:center;font-size:12px;margin:0 0 18px;">Watch the cups shuffle, then click the one hiding the ball.</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="shell-play-btn" style="padding:10px 28px;border-radius:6px;border:1px solid #6633aa;background:#1a0a30;color:#cc99ff;font-size:15px;font-weight:bold;cursor:pointer;">🎩 Play!</button>
+        <button id="shell-decline-btn" style="padding:10px 28px;border-radius:6px;border:none;background:#444;color:white;font-size:15px;cursor:pointer;">Leave</button>
+      </div>
+    </div>
+
+    <!-- Game screen -->
+    <div id="shell-game" class="hidden">
+      <p id="shell-msg" style="color:#cc99ff;text-align:center;font-size:15px;margin:0 0 10px;min-height:22px;font-style:italic;"></p>
+      <canvas id="shell-canvas" width="620" height="260" style="border:2px solid #6633aa;border-radius:8px;display:block;cursor:pointer;margin:0 auto;"></canvas>
+    </div>
+
+    <!-- Result screen -->
+    <div id="shell-result" class="hidden" style="text-align:center;padding:16px 0;">
+      <p id="shell-result-text" style="font-size:26px;margin:0 0 10px;"></p>
+      <p id="shell-result-sub" style="font-size:15px;color:#ccc;margin:0 0 22px;"></p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="shell-again-btn" style="padding:10px 24px;border-radius:6px;border:1px solid #6633aa;background:#1a0a30;color:#cc99ff;font-size:14px;font-weight:bold;cursor:pointer;">🎩 Play Again</button>
+        <button id="shell-close-btn" style="padding:10px 24px;border-radius:6px;border:none;background:#444;color:white;font-size:14px;cursor:pointer;">Leave</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="cursor.js"></script>
 <script>
 // ================================================================
@@ -432,6 +467,8 @@ const T = Object.freeze({
   CREAM_MUSH:57, // cream mushroom with white glow (walkable decoration)
   CAVE_POOL: 58, // animated blue cave pool (non-walkable)
   SKELETON:  59, // skeleton decor (non-walkable prop)
+  DOOR_SM:   60, // Village Square alley → Secret Blackmarket
+  DOOR_MS:   61, // Secret Blackmarket → Village Square
 });
 
 const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS,
@@ -441,7 +478,8 @@ const WALKABLE = new Set([T.FLOOR, T.DOOR_R, T.DOOR_L, T.COBBLE, T.GRASS,
                            T.DOOR_DCE, T.DOOR_CED, T.CAVE_OPEN, T.CAVE_BACK,
                            T.CAVE_FLOOR, T.COBWEB_T,
                            T.DOOR_C2, T.DOOR_2C, T.DOOR_C3, T.DOOR_3C,
-                           T.DOOR_C4, T.DOOR_4C, T.PITFALL, T.CREAM_MUSH]);
+                           T.DOOR_C4, T.DOOR_4C, T.PITFALL, T.CREAM_MUSH,
+                           T.DOOR_SM, T.DOOR_MS]);
 
 // ── short aliases for map building ──────────────────────────────
 const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
@@ -459,7 +497,8 @@ const { FLOOR:F, WALL:W, DOOR_R:DR, DOOR_L:DL,
         CAVE_FLOOR:CVF, CAVE_ROCK:CVR, COBWEB_T:CWT,
         DOOR_C2:DC2, DOOR_2C:D2C, DOOR_C3:DC3, DOOR_3C:D3C,
         DOOR_C4:DC4, DOOR_4C:D4C, PITFALL:PIT,
-        CREAM_MUSH:CMU, CAVE_POOL:CPL, SKELETON:SKL } = T;
+        CREAM_MUSH:CMU, CAVE_POOL:CPL, SKELETON:SKL,
+        DOOR_SM:DSM, DOOR_MS:DMS } = T;
 
 // ── room definitions ─────────────────────────────────────────────
 const ROOMS = [
@@ -516,8 +555,8 @@ const ROOMS = [
       [ Z, G, G, G, G, G, G, G, G, G, C,HW,HW,DST,HW, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
       // row 11 – NPCs stand here (barkeeper col 4, cook col 25)
       [ Z, G, G, G, G, G, G, G, G, G, C,SG, G, G, G, G, G, G, G, C, G, G, G, G, G, G, G, G, G, Z],
-      // row 12 – buildings in bottom-left (cols 2-6) and bottom-right (cols 23-27)
-      [ Z, G,HW,HW,HW,HW,HW, G, G, G, C, G, G, G, G, G, G,SL,SR, C, G, G, G,HW,HW,HW,HW,HW, G, Z],
+      // row 12 – buildings in bottom-left (cols 2-6) and bottom-right (cols 23-27); secret door at col 3
+      [ Z, G,HW,DSM,HW,HW,HW, G, G, G, C, G, G, G, G, G, G,SL,SR, C, G, G, G,HW,HW,HW,HW,HW, G, Z],
       [ Z, G,HW,HW,HW,HW,HW, G, G, G, C, C, C, C, C, C, C, C, C, C, G, G, G,HW,HW,HW,HW,HW, G, Z],
       [ Z, G,HW,HW,HW,HW,HW, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G, G,HW,HW,HW,HW,HW, G, Z],
       [ Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z],
@@ -527,6 +566,7 @@ const ROOMS = [
     entryFromStoreroom: { x: 13, y: 11 },  // arrival from storeroom (below storeroom building door)
     entryFromFarmland:  { x: 14, y: 1 },   // arrival from farmland
     entryFromRowanoak:  { x: 28, y: 7 },   // arrival from Rowanoak Village
+    entryFromBlackmarket: { x: 3, y: 11 }, // arrival from Secret Blackmarket (above secret door)
   },
 
   // ── Room 2 : Farmland ─────────────────────────────────────────
@@ -1016,6 +1056,33 @@ const ROOMS = [
     chestTile:           null,
     entryFromRiverside:  { x: 1, y: 7 },
   },
+
+  // ── Room 14 : Secret Blackmarket ──────────────────────────────
+  {
+    name: 'Secret Blackmarket',
+    bgColor: '#080510',
+    map: [
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, W, W, W, W, W, W, W, W, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, F, F, F, F, F, F, F, F, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+      [BK,BK,BK,BK,BK,BK,BK,BK,BK,BK, W, W, W, W,DMS, W, W, W, W, W,BK,BK,BK,BK,BK,BK,BK,BK,BK,BK],
+    ],
+    playerSpawn:      { x: 14, y: 13 },
+    chestTile:        null,
+    entryFromVillage: { x: 14, y: 13 }, // arrival from Village Square secret door
+  },
 ]; // ── chest item catalogue ─────────────────────────────────────────
 const CHEST_ITEMS = [
   { id:'sword',       name:'Rusty Sword',   icon:'⚔️',  desc:'An old but still sharp sword',              taken:false },
@@ -1198,6 +1265,20 @@ const NPCS = [
     accessory: 'spear',
     guardRole: 'bridge_guard',
     asideY: 9,
+  },
+  {
+    id: 'shell_dealer',
+    name: 'The Dealer',
+    tileX: 14, tileY: 6,
+    room: 14,
+    dialog: [
+      "Psst... welcome to the Secret Blackmarket, stranger.",
+      "Care to test your eyes? Find the ball under the right cup and win 10 gold coins. Play as many times as you like...",
+    ],
+    outfitColor: '#1a1020',
+    hairColor: '#0d0a10',
+    accessory: null,
+    shellgameable: true,
   },
 ];
 
@@ -2024,6 +2105,38 @@ function drawTile(type, col, row) {
       // legs (bones)
       fr(sx2-6, sy2+11, 4, 10, '#c8c0a8');
       fr(sx2+2, sy2+11, 4, 10, '#c8c0a8');
+      break;
+    }
+
+    // ─ Village Square alley → Secret Blackmarket ─────────────────
+    case T.DOOR_SM: {
+      fr(x, y, TILE, TILE, '#3a3040');          // dark stone surround
+      fr(x+3, y+2, TILE-6, TILE-4, '#1a0a28'); // dark door frame
+      fr(x+6, y+5, TILE-12, TILE-8, '#0d0718'); // inner void
+      // faint purple glow
+      ctx.fillStyle = 'rgba(120,60,180,0.22)';
+      ctx.fillRect(x+6, y+5, TILE-12, TILE-8);
+      // mysterious symbol
+      ctx.fillStyle = '#8855cc';
+      ctx.font = 'bold 15px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('🎩', x+TILE/2, y+TILE/2+6);
+      ctx.textAlign = 'left';
+      break;
+    }
+
+    // ─ Secret Blackmarket → Village Square ───────────────────────
+    case T.DOOR_MS: {
+      fr(x, y, TILE, TILE, '#3a3040');
+      fr(x+4, y+2, TILE-8, TILE-4, '#2a1a3a');
+      fr(x+7, y+5, 10, 13, '#1a0a28');
+      fr(x+7, y+20, 10, 12, '#1a0a28');
+      fr(x+TILE/2-3, y+TILE/2-3, 6, 6, '#8855cc');
+      ctx.fillStyle = '#cc99ff';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▲', x+TILE/2, y+TILE/2+8);
+      ctx.textAlign = 'left';
       break;
     }
 
@@ -2854,6 +2967,22 @@ function openNpcDialog(npc) {
     shopDiv.appendChild(challengeBtn);
   }
 
+  // ── Shell game button ────────────────────────────────────────────
+  if (npc.shellgameable) {
+    const hr3 = document.createElement('hr');
+    hr3.style.borderColor = '#3a2050';
+    shopDiv.appendChild(hr3);
+    const shellBtn = document.createElement('button');
+    shellBtn.className = 'buy-btn';
+    shellBtn.style.cssText = 'background:#1a0a30;color:#cc99ff;border-color:#6633aa;font-weight:bold;';
+    shellBtn.textContent = '🎩 Play the Shell Game! (Win 10 coins)';
+    shellBtn.addEventListener('click', () => {
+      closeNpcDialog();
+      openShellModal();
+    });
+    shopDiv.appendChild(shellBtn);
+  }
+
   document.getElementById('npc-dialog-sidebar').classList.remove('hidden');
 }
 
@@ -3489,6 +3618,16 @@ function update(dt) {
         startTransition(9, sp.x, sp.y);
         return;
       }
+      if (tile === T.DOOR_SM && roomIdx === 1) {
+        const sp = ROOMS[14].entryFromVillage;
+        startTransition(14, sp.x, sp.y);
+        return;
+      }
+      if (tile === T.DOOR_MS && roomIdx === 14) {
+        const sp = ROOMS[1].entryFromBlackmarket;
+        startTransition(1, sp.x, sp.y);
+        return;
+      }
       // ── pitfall trap – teleport player back to room entry ──────
       // Rooms with pitfalls must define 'entryFromCave1' or 'playerSpawn'
       if (tile === T.PITFALL) {
@@ -3613,6 +3752,64 @@ function render() {
   if (roomIdx === 0) {
     ctx.fillStyle = 'rgba(60,30,10,0.18)';
     ctx.fillRect(0, 0, canvas.width, GAME_H);
+  }
+
+  // ── Secret Blackmarket atmosphere ───────────────────────────
+  if (roomIdx === 14) {
+    // Deep shadow vignette
+    const vigGrad = ctx.createRadialGradient(
+      canvas.width/2, GAME_H/2, 80,
+      canvas.width/2, GAME_H/2, 420
+    );
+    vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vigGrad.addColorStop(1, 'rgba(0,0,0,0.72)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, canvas.width, GAME_H);
+    // Purple smoke tint
+    ctx.fillStyle = 'rgba(40,10,60,0.18)';
+    ctx.fillRect(0, 0, canvas.width, GAME_H);
+    // Table (at cols 11-18, rows 3-5 within the room)
+    const tblX = 11 * TILE, tblY = 3 * TILE;
+    const tblW = 8 * TILE, tblH = 3 * TILE;
+    ctx.fillStyle = '#2a1205';
+    ctx.fillRect(tblX, tblY, tblW, tblH);
+    ctx.fillStyle = '#3a1a08';
+    ctx.fillRect(tblX+4, tblY+4, tblW-8, tblH-8);
+    // Wood grain lines on table
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    for (let gy = tblY + 12; gy < tblY + tblH; gy += 14) {
+      ctx.beginPath(); ctx.moveTo(tblX+4, gy); ctx.lineTo(tblX+tblW-4, gy+2); ctx.stroke();
+    }
+    // Table legs
+    ctx.fillStyle = '#1a0a04';
+    ctx.fillRect(tblX+6, tblY+tblH, 8, 12);
+    ctx.fillRect(tblX+tblW-14, tblY+tblH, 8, 12);
+    // Candle on the table
+    const tnow = performance.now();
+    const candleX = 15 * TILE + TILE/2;
+    const candleY = 3 * TILE + 20;
+    // Candle glow (flickering)
+    const flicker = 0.85 + 0.15 * Math.sin(tnow * 0.007 + Math.cos(tnow * 0.011));
+    const glowGrad = ctx.createRadialGradient(candleX, candleY, 5, candleX, candleY, 100 * flicker);
+    glowGrad.addColorStop(0, `rgba(255,200,80,${0.22 * flicker})`);
+    glowGrad.addColorStop(0.4, `rgba(200,120,30,${0.12 * flicker})`);
+    glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(candleX - 110, candleY - 110, 220, 220);
+    // Candle body
+    ctx.fillStyle = '#e8e0c8';
+    ctx.fillRect(candleX - 4, candleY, 8, 22);
+    // Flame
+    const fh = 10 + 3 * Math.sin(tnow * 0.009);
+    ctx.fillStyle = `rgba(255,${Math.round(160 + 40 * flicker)},30,0.95)`;
+    ctx.beginPath();
+    ctx.ellipse(candleX, candleY - fh/2, 4, fh/2, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,180,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(candleX, candleY - fh*0.35, 2, fh*0.3, 0, 0, Math.PI*2);
+    ctx.fill();
   }
 
   // ── footsteps ───────────────────────────────────────────────
@@ -3883,6 +4080,8 @@ function render() {
     if (tile === T.DOOR_2C && roomIdx === 10) drawHint('Enter ▲ Cave');
     if (tile === T.DOOR_3C && roomIdx === 11) drawHint('Enter ▲ Cave');
     if (tile === T.DOOR_4C && roomIdx === 12) drawHint('Enter ▲ Cave');
+    if (tile === T.DOOR_SM && roomIdx === 1)  drawHint('Enter 🎩 Secret Blackmarket');
+    if (tile === T.DOOR_MS && roomIdx === 14) drawHint('Exit ▲ Village Square');
   }
 
   // ── hotbar ──────────────────────────────────────────────────
@@ -4281,6 +4480,370 @@ document.getElementById('ch-accept-btn').addEventListener('click', startChalleng
 document.getElementById('ch-decline-btn').addEventListener('click', closeChallengeModal);
 document.getElementById('ch-retry-btn').addEventListener('click', startChallengeGame);
 document.getElementById('ch-close-result-btn').addEventListener('click', closeChallengeModal);
+
+// ================================================================
+//  SHELL GAME – Cup and Ball Mini-game
+// ================================================================
+
+const ShellGame = (() => {
+  const CW = 620, CH = 260;
+  const SLOTS   = [110, 310, 510];  // cup center-X positions
+  const BASE_Y  = 210;              // cup base Y
+  const CUP_W   = 62, CUP_H = 88;
+  const BALL_R  = 13;
+  const PEEK_DUR   = 1600;          // ms to show ball
+  const HIDE_DUR   = 400;
+  const SWAP_DUR   = 560;           // ms per cup swap
+  const SWAP_PAUSE = 90;            // ms pause between swaps
+
+  let cv, cx2, msgEl, afId;
+  let cups;   // [{ x, liftY, hasBall }]
+  let phase;  // 'peek'|'hiding'|'shuffle'|'wait'|'reveal'|'done'
+  let t0;
+  let swaps, si, swapA, swapB, saxA, saxB, swapT0;
+  let selected, won;
+  let onResult;
+
+  const ease = t => t < .5 ? 2*t*t : -1+(4-2*t)*t;
+
+  function genSwaps(n) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      let a, b;
+      do { a = Math.random()*3|0; b = Math.random()*3|0; } while (a===b);
+      out.push([a, b]);
+    }
+    return out;
+  }
+
+  // ── drawing helpers ──────────────────────────────────────────
+  function drawWood() {
+    // Base wood colour
+    cx2.fillStyle = '#4a2010';
+    cx2.fillRect(0, 0, CW, CH);
+    // Lighter mid-zone
+    cx2.fillStyle = '#5c2a14';
+    cx2.fillRect(0, 30, CW, CH-60);
+    // Grain lines
+    cx2.lineWidth = 1.2;
+    for (let y = 0; y < CH; y += 16) {
+      cx2.strokeStyle = `rgba(0,0,0,${0.12 + 0.06*Math.sin(y)})`;
+      cx2.beginPath(); cx2.moveTo(0, y); cx2.lineTo(CW, y+5); cx2.stroke();
+      cx2.strokeStyle = `rgba(255,255,255,${0.04})`;
+      cx2.beginPath(); cx2.moveTo(0, y+6); cx2.lineTo(CW, y+10); cx2.stroke();
+    }
+    // Top/bottom shadow
+    const sg = cx2.createLinearGradient(0,0,0,CH);
+    sg.addColorStop(0,   'rgba(0,0,0,0.35)');
+    sg.addColorStop(0.14,'rgba(0,0,0,0)');
+    sg.addColorStop(0.86,'rgba(0,0,0,0)');
+    sg.addColorStop(1,   'rgba(0,0,0,0.45)');
+    cx2.fillStyle = sg;
+    cx2.fillRect(0, 0, CW, CH);
+    // Table surface line
+    cx2.strokeStyle = 'rgba(0,0,0,0.5)';
+    cx2.lineWidth = 2;
+    cx2.beginPath(); cx2.moveTo(0, BASE_Y+14); cx2.lineTo(CW, BASE_Y+14); cx2.stroke();
+  }
+
+  function drawBall(cup) {
+    const bx = cup.x, by = BASE_Y - 14 + cup.liftY;
+    cx2.save();
+    cx2.shadowColor = '#ff6040'; cx2.shadowBlur = 8;
+    cx2.fillStyle = '#dd2810';
+    cx2.beginPath(); cx2.arc(bx, by, BALL_R, 0, Math.PI*2); cx2.fill();
+    cx2.restore();
+    // Highlight
+    cx2.fillStyle = 'rgba(255,180,150,0.55)';
+    cx2.beginPath(); cx2.arc(bx-4, by-4, 5, 0, Math.PI*2); cx2.fill();
+  }
+
+  function drawCup(cup, isActive) {
+    const cx_ = cup.x, cy_ = BASE_Y + cup.liftY;
+    // Shadow ellipse
+    cx2.fillStyle = 'rgba(0,0,0,0.38)';
+    cx2.beginPath();
+    cx2.ellipse(cx_, cy_+8, CUP_W*0.46, 7, 0, 0, Math.PI*2);
+    cx2.fill();
+    // Cup body (trapezoid: wide at top, narrow at bottom)
+    const tw = CUP_W, bw = CUP_W*0.62, h = CUP_H;
+    const g = cx2.createLinearGradient(cx_-tw/2, 0, cx_+tw/2, 0);
+    g.addColorStop(0,    '#1e0601');
+    g.addColorStop(0.3,  '#4a1208');
+    g.addColorStop(0.65, '#3c0e05');
+    g.addColorStop(1,    '#160401');
+    cx2.beginPath();
+    cx2.moveTo(cx_-tw/2, cy_-h);
+    cx2.lineTo(cx_+tw/2, cy_-h);
+    cx2.lineTo(cx_+bw/2, cy_);
+    cx2.lineTo(cx_-bw/2, cy_);
+    cx2.closePath();
+    cx2.fillStyle = g;
+    cx2.fill();
+    cx2.strokeStyle = isActive ? '#aa55ff' : '#6a2810';
+    cx2.lineWidth = isActive ? 2 : 1.5;
+    cx2.stroke();
+    // Top rim
+    cx2.beginPath();
+    cx2.ellipse(cx_, cy_-h, tw/2+3, 8, 0, 0, Math.PI*2);
+    cx2.fillStyle = '#6a2010';
+    cx2.fill();
+    cx2.strokeStyle = '#9a4030';
+    cx2.lineWidth = 1;
+    cx2.stroke();
+    // Base rim
+    cx2.beginPath();
+    cx2.ellipse(cx_, cy_, bw/2+3, 5, 0, 0, Math.PI*2);
+    cx2.fillStyle = '#5a1a08';
+    cx2.fill();
+    // Highlight stripe
+    cx2.beginPath();
+    cx2.moveTo(cx_-tw/2+9, cy_-h+4);
+    cx2.lineTo(cx_-bw/2+6, cy_-5);
+    cx2.strokeStyle = 'rgba(255,160,80,0.14)';
+    cx2.lineWidth = 7;
+    cx2.stroke();
+  }
+
+  function drawHand(cup) {
+    const hx = cup.x, hy = BASE_Y + cup.liftY - CUP_H - 18;
+    cx2.save();
+    cx2.globalAlpha = 0.78;
+    cx2.fillStyle = '#060209';
+    // Palm
+    cx2.beginPath();
+    cx2.ellipse(hx, hy+18, 22, 15, 0, 0, Math.PI*2);
+    cx2.fill();
+    // Five fingers (offset x, offset y, rx, ry, rotation)
+    const fingers = [
+      [-18,-10,5,24, -0.25],
+      [ -8, -5,5,28,  -0.1],
+      [  2, -4,5,29,   0.0],
+      [ 12, -6,5,27,   0.1],
+      [ 20,-12,4,22,   0.2],
+    ];
+    for (const [ox,oy,rw,rh,rot] of fingers) {
+      cx2.beginPath();
+      cx2.ellipse(hx+ox, hy+oy, rw, rh, rot, 0, Math.PI*2);
+      cx2.fill();
+    }
+    cx2.restore();
+  }
+
+  // ── phase transitions ────────────────────────────────────────
+  function setPhase(p) {
+    phase = p;
+    t0 = performance.now();
+  }
+
+  function startShuffle() {
+    const n = 4 + Math.floor(Math.random()*3); // 4-6 swaps
+    swaps = genSwaps(n);
+    si = 0;
+    setPhase('shuffle');
+    commitSwap(0);
+  }
+
+  function commitSwap(idx) {
+    if (idx >= swaps.length) return;
+    swapA = swaps[idx][0]; swapB = swaps[idx][1];
+    saxA  = cups[swapA].x;  saxB  = cups[swapB].x;
+    swapT0 = performance.now();
+  }
+
+  // ── main draw ────────────────────────────────────────────────
+  function draw() {
+    const now = performance.now();
+    const elapsed = now - t0;
+    cx2.clearRect(0, 0, CW, CH);
+    drawWood();
+
+    let handIdx = -1;
+    let ballRevealCup = null;
+
+    // Phase-specific cup animations
+    if (phase === 'peek') {
+      const t = Math.min(elapsed / 350, 1);
+      cups[ballCupIdx()].liftY = -ease(t) * 32;
+      ballRevealCup = cups[ballCupIdx()];
+    }
+    if (phase === 'hiding') {
+      const t = Math.min(elapsed / HIDE_DUR, 1);
+      cups[ballCupIdx()].liftY = -32 * (1 - ease(t));
+    }
+    if (phase === 'shuffle' && si < swaps.length) {
+      const se = now - swapT0;
+      if (se >= 0 && se < SWAP_DUR) {
+        const t = ease(se / SWAP_DUR);
+        cups[swapA].x = saxA + (saxB - saxA) * t;
+        cups[swapB].x = saxB + (saxA - saxB) * t;
+        cups[swapA].liftY = -28 * Math.sin(t * Math.PI);
+        cups[swapB].liftY  = 0;
+        handIdx = swapA;
+      } else if (se >= SWAP_DUR) {
+        // Commit position (guard with Infinity so this fires only once)
+        cups[swapA].x = saxB;
+        cups[swapB].x = saxA;
+        cups[swapA].liftY = 0;
+        cups[swapB].liftY = 0;
+        swapT0 = Infinity;  // prevent re-triggering each frame
+        si++;
+        if (si < swaps.length) {
+          // Brief pause then next swap
+          setTimeout(() => { if (phase === 'shuffle') commitSwap(si); }, SWAP_PAUSE);
+        } else {
+          // Done shuffling
+          setTimeout(() => {
+            if (phase === 'shuffle') {
+              setPhase('wait');
+              msgEl.textContent = 'Which cup is hiding the ball? Click to choose!';
+            }
+          }, 250);
+        }
+      }
+    }
+    if (phase === 'reveal') {
+      const t = Math.min(elapsed / 600, 1);
+      cups[selected].liftY = -ease(t) * 36;
+      if (elapsed > 450) ballRevealCup = cups[selected];
+    }
+
+    // Draw ball before cups (so cups cover it)
+    if (ballRevealCup) drawBall(ballRevealCup);
+
+    // Sort cups by liftY for z-order (lifted cups drawn last = on top)
+    const sorted = cups.map((c,i)=>({c,i})).sort((a,b)=>b.c.liftY-a.c.liftY);
+    for (const {c,i} of sorted) {
+      drawCup(c, phase==='wait');
+    }
+    // Draw hand on top of moving cup
+    if (handIdx >= 0) drawHand(cups[handIdx]);
+
+    // Phase transitions (guarded by explicit phase change to prevent repeat-firing)
+    if (phase === 'peek' && elapsed > PEEK_DUR) {
+      cups[ballCupIdx()].liftY = -32;
+      setPhase('hiding');
+      msgEl.textContent = 'Watch the cups...';
+    }
+    if (phase === 'hiding' && elapsed > HIDE_DUR) {
+      cups[ballCupIdx()].liftY = 0;
+      startShuffle();
+      msgEl.textContent = 'Watch the cups...';
+    }
+    if (phase === 'reveal' && elapsed > 1400) {
+      phase = 'done'; // set before onResult to prevent re-trigger
+      onResult(won);
+      return;
+    }
+
+    afId = requestAnimationFrame(draw);
+  }
+
+  function ballCupIdx() {
+    return cups.findIndex(c => c.hasBall);
+  }
+
+  // ── public API ───────────────────────────────────────────────
+  function init(canvasEl, messageEl, resultCallback) {
+    cv = canvasEl;
+    cx2 = cv.getContext('2d');
+    cx2.imageSmoothingEnabled = false;
+    msgEl = messageEl;
+    onResult = resultCallback;
+
+    cv.addEventListener('click', e => {
+      if (phase !== 'wait') return;
+      const rect = cv.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (CW / rect.width);
+      for (let i = 0; i < cups.length; i++) {
+        if (Math.abs(mx - cups[i].x) < CUP_W/2 + 10) {
+          selected = i;
+          won = cups[i].hasBall;
+          msgEl.textContent = won ? '✨ You found it!' : '😔 Wrong cup...';
+          setPhase('reveal');
+          break;
+        }
+      }
+    });
+  }
+
+  function start() {
+    cancelAnimationFrame(afId);
+    // Reset cups to starting slot positions
+    cups = SLOTS.map((sx, i) => ({ x: sx, liftY: 0, hasBall: false }));
+    const ballSlot = Math.floor(Math.random() * 3);
+    cups[ballSlot].hasBall = true;
+    selected = -1; won = false; si = 0;
+    setPhase('peek');
+    msgEl.textContent = 'Watch carefully – remember this cup!';
+    afId = requestAnimationFrame(draw);
+  }
+
+  function stop() {
+    cancelAnimationFrame(afId);
+  }
+
+  return { init, start, stop };
+})();
+
+// ── Shell Game modal management ──────────────────────────────────
+let shellInited = false;
+
+function openShellModal() {
+  modalOpen = true;
+  document.getElementById('shell-modal').classList.remove('hidden');
+  document.getElementById('shell-intro').style.display  = '';
+  document.getElementById('shell-game').classList.add('hidden');
+  document.getElementById('shell-result').classList.add('hidden');
+}
+
+function closeShellModal() {
+  ShellGame.stop();
+  document.getElementById('shell-modal').classList.add('hidden');
+  modalOpen = false;
+  canvas.focus();
+}
+
+function startShellGame() {
+  document.getElementById('shell-intro').style.display = 'none';
+  document.getElementById('shell-game').classList.remove('hidden');
+  document.getElementById('shell-result').classList.add('hidden');
+
+  if (!shellInited) {
+    shellInited = true;
+    ShellGame.init(
+      document.getElementById('shell-canvas'),
+      document.getElementById('shell-msg'),
+      onShellGameComplete
+    );
+  }
+  ShellGame.start();
+}
+
+function onShellGameComplete(playerWon) {
+  document.getElementById('shell-game').classList.add('hidden');
+  document.getElementById('shell-result').classList.remove('hidden');
+
+  const rt = document.getElementById('shell-result-text');
+  const rs = document.getElementById('shell-result-sub');
+  if (playerWon) {
+    player.coins += 10;
+    updateSidebar();
+    rt.style.color = '#daa520';
+    rt.textContent = '🏆 Correct!';
+    rs.textContent = '+10 gold coins added to your purse!';
+  } else {
+    rt.style.color = '#cc2222';
+    rt.textContent = '🎩 Better luck next time!';
+    rs.textContent = '"The ball moves fast... try again?"';
+  }
+}
+
+// Shell Game button listeners
+document.getElementById('shell-play-btn').addEventListener('click', startShellGame);
+document.getElementById('shell-decline-btn').addEventListener('click', closeShellModal);
+document.getElementById('shell-again-btn').addEventListener('click', startShellGame);
+document.getElementById('shell-close-btn').addEventListener('click', closeShellModal);
 
 // ================================================================
 //  MAIN LOOP
