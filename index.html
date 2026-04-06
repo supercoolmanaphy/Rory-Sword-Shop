@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="images/sword5.jpg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap">
   <title>Rory's Sword Shop</title>
@@ -43,8 +44,14 @@
 
     .products {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .products {
+        grid-template-columns: 1fr;
+      }
     }
 
     .product {
