@@ -1,4 +1,4 @@
-# Architecture – Rory's Sword Shop
+# Architecture – Rory's Bronze Factory
 
 ## Project Overview
 Hybrid e-commerce + gaming project.
