@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="images/sword5.jpg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap">
+  <title>Rory's Bronze Factory</title>
+  <style>
+    * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .shop-header {
+      background-color: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px;
+      position: relative;
+      border-radius: 10px;
+      font-family: 'Cinzel', serif;
+    }
+
+    .header-cart {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      text-decoration: none;
+      color: white;
+      font-size: 18px;
+    }
+
+    .header-cart:hover { color: #ccc; }
+
+    .shop-nav-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      margin-right: 10px;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .shop-nav-link:last-child { margin-right: 0; }
+
+    .shop-nav-green { background-color: #008000; }
+    .shop-nav-green:hover { background-color: #006400; }
+    .shop-nav-bronze { background-color: #7a4e00; }
+    .shop-nav-bronze:hover { background-color: #9a6600; }
+    .shop-nav-blue { background-color: #1a4a7a; }
+    .shop-nav-blue:hover { background-color: #2a6aaa; }
+    .shop-nav-rust { background-color: #6a3a00; }
+    .shop-nav-rust:hover { background-color: #8a5200; }
+    .shop-nav-purple { background-color: #4a2060; }
+    .shop-nav-purple:hover { background-color: #6a3a80; }
+    .shop-nav-forest { background-color: #1a6a3a; }
+    .shop-nav-forest:hover { background-color: #2a8a4a; }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .product {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      text-decoration: none;
+      color: black;
+      display: block;
+    }
+
+    .product:hover { transform: scale(1.05); }
+
+    .product img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .product img.coming-soon-img { height: 500px; }
+
+    .product h3 { margin: 10px 0 5px; }
+
+    .product p { margin: 5px 0; }
+
+    h1, h2, h3, h4, h5, h6 { font-family: 'Cinzel', serif; }
+
+    .home-link-wrap {
+      margin: 14px 0 20px;
+      text-align: center;
+    }
+
+    .home-link {
+      color: #1f2937;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .home-link:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .products { grid-template-columns: 1fr; }
+      .shop-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .header-cart {
+        position: static;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="home-link-wrap">
+      <a href="index.html" class="home-link">← Back to RoryWest.org home</a>
+    </div>
+
+    <div class="shop-header">
+      Rory's Bronze Factory
+      <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
+    </div>
+
+    <div style="padding: 20px;">
+      <a href="games.html" class="shop-nav-link shop-nav-green"><span aria-hidden="true">🎮</span> Games</a>
+      <a href="how-its-made.html" class="shop-nav-link shop-nav-bronze"><span aria-hidden="true">🔥</span> How It's Made</a>
+      <a href="business-plan.html" class="shop-nav-link shop-nav-blue"><span aria-hidden="true">📋</span> Business Plan</a>
+      <a href="cogs.html" class="shop-nav-link shop-nav-rust"><span aria-hidden="true">💰</span> COGS</a>
+      <a href="history.html" class="shop-nav-link shop-nav-purple"><span aria-hidden="true">🏛️</span> History</a>
+      <a href="custom-order.html" class="shop-nav-link shop-nav-forest"><span aria-hidden="true">💡</span> Custom Order</a>
+
+      <h2>Available Products</h2>
+
+      <div class="products">
+        <a href="product1.html" class="product">
+          <img src="images/sword1.1.jpg" alt="Bronze Short Sword">
+          <h3>Bronze Short Sword</h3>
+          <p>$150.00</p>
+        </a>
+
+        <a href="product2.html" class="product">
+          <img src="images/arrows2.jpg" alt="Bronze Arrowheads">
+          <h3>Bronze Arrowheads - 5</h3>
+          <p>$50.00</p>
+        </a>
+
+        <a href="product3.html" class="product">
+          <img src="images/spear1.jpg" alt="Bronze Spear">
+          <h3>Bronze Spear</h3>
+          <p>$75.00</p>
+        </a>
+
+        <a href="product4.html" class="product">
+          <img src="images/axe3.jpg" alt="Bronze Axe Head">
+          <h3>Bronze Axe Head</h3>
+          <p>$75.00</p>
+        </a>
+      </div>
+
+      <div style="max-width: 800px; margin: 30px auto;">
+        <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+          <iframe
+            src="https://www.youtube.com/embed/dMvsH3S1R5o?autoplay=1&mute=1&loop=1&playlist=dMvsH3S1R5o"
+            style="position: absolute; top:0; left:0; width:100%; height:100%; border-radius:10px;"
+            frameborder="0"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+
+      <h2>Coming Soon</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div class="product">
+          <img src="images/Athena1.png" alt="Athena" class="coming-soon-img">
+        </div>
+        <div class="product">
+          <img src="images/Horus1.png" alt="Horus" class="coming-soon-img">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; padding: 40px 20px;">
+    <a href="custom-order.html" style="font-family: 'Cinzel', serif; font-size: 22px; color: #7a4e00; text-decoration: none; border: 2px solid #7a4e00; padding: 16px 36px; border-radius: 8px; display: inline-block; transition: background-color 0.2s, color 0.2s;" onmouseover="this.style.backgroundColor='#7a4e00';this.style.color='white'" onmouseout="this.style.backgroundColor='transparent';this.style.color='#7a4e00'">
+      Interested in a Custom Order? Click Here
+    </a>
+  </div>
+
+  <div style="text-align: center; padding: 30px 20px;">
+    <img src="images/sword4.jpg" alt="Rory's Bronze Factory logo" style="width: 160px; height: auto; opacity: 0.8;">
+  </div>
+
+  <script src="cart.js"></script>
+  <script>
+    document.getElementById('cart-count').textContent = getCart().length;
+  </script>
+  <script src="cursor.js"></script>
+</body>
+</html>
