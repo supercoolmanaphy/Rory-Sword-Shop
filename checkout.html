@@ -165,7 +165,7 @@
   <header>Rory's Bronze Factory<a href="login.html" class="admin-login-btn">Admin Login</a></header>
 
   <div class="container">
-    <a href="index.html" class="back">← Back to Shop</a>
+    <a href="shop.html" class="back">← Back to Shop</a>
 
     <div class="cart-box">
       <h2>Your Cart</h2>
@@ -175,7 +175,7 @@
       <div class="success-msg" id="success-msg">
         <h2>✓ Order Placed!</h2>
         <p>Thank you for your order. We'll be in touch shortly.</p>
-        <a href="index.html">← Continue Shopping</a>
+        <a href="shop.html">← Continue Shopping</a>
       </div>
     </div>
   </div>
@@ -191,7 +191,7 @@
       const msg = document.createElement('p');
       msg.className = 'empty-msg';
       const link = document.createElement('a');
-      link.href = 'index.html';
+      link.href = 'shop.html';
       link.textContent = 'Browse products';
       msg.textContent = 'Your cart is empty. ';
       msg.appendChild(link);

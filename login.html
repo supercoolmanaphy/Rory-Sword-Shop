@@ -116,7 +116,7 @@
       <button class="sign-out-btn" id="sign-out-btn">Sign Out</button>
     </div>
 
-    <a href="index.html" class="back-link">← Back to Shop</a>
+    <a href="shop.html" class="back-link">← Back to Shop</a>
   </div>
 </div>
 
@@ -128,10 +128,10 @@
       const url = new URL(raw, window.location.origin);
       if (url.origin === window.location.origin) return url.pathname + url.search + url.hash;
     } catch {}
-    return 'index.html';
+    return 'shop.html';
   }
   const params = new URLSearchParams(window.location.search);
-  const nextUrl = getSafeNext(params.get('next') || 'index.html');
+  const nextUrl = getSafeNext(params.get('next') || 'shop.html');
 
   const signInView = document.getElementById('sign-in-view');
   const signedInView = document.getElementById('signed-in-view');

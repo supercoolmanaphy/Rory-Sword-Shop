@@ -2,7 +2,7 @@
 
 ## Project Overview
 Hybrid e-commerce + gaming project.
-- **Shop** (`index.html` + product pages) – HTML/CSS storefront with localStorage cart.
+- **Shop** (`shop.html` + product pages) – HTML/CSS storefront with localStorage cart.
 - **Sword Slash** (`game.html`) – 30-second click-reaction mini-game.
 - **Knight's Quest** (`game2.html`) – Tile-based top-down RPG (main game).
 
@@ -86,7 +86,7 @@ Tile coords stay at the **previous** tile until animation completes; pixel coord
 
 | File | Responsibility |
 |------|---------------|
-| `index.html` | Shop homepage – product grid, navigation to games |
+| `shop.html` | Shop homepage – product grid, navigation to games |
 | `product1–4.html` | Product detail pages – image, price, Add-to-Cart |
 | `checkout.html` | Shopping cart review and checkout |
 | `cart.js` | `getCart()` / `saveCart()` – localStorage cart persistence |
