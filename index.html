@@ -110,11 +110,15 @@
       border-color: #9ca3af;
     }
 
-    .brand-card h3 {
+    .brand-card-title {
+      display: block;
       margin: 0 0 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
     }
 
-    .brand-card p {
+    .brand-card-text {
+      display: block;
       margin: 0;
     }
 
@@ -155,8 +159,8 @@
       margin-right: 0;
     }
 
-    .shop-nav-green { background-color: green; }
-    .shop-nav-green:hover { background-color: darkgreen; }
+    .shop-nav-green { background-color: #006400; }
+    .shop-nav-green:hover { background-color: #004f00; }
     .shop-nav-bronze { background-color: #7a4e00; }
     .shop-nav-bronze:hover { background-color: #9a6600; }
     .shop-nav-blue { background-color: #1a4a7a; }
@@ -285,9 +289,9 @@
     <section id="projects" class="brand-section">
       <h2>Featured work</h2>
       <div class="brand-grid">
-        <a href="game2.html" class="brand-card" aria-label="View Knight's Quest game project"><h3>Knight's Quest</h3><p>Play my tile-based adventure RPG project.</p></a>
-        <a href="game3.html" class="brand-card" aria-label="View Prototype Arena game project"><h3>Prototype Arena</h3><p>Try an alternate game prototype in progress.</p></a>
-        <a href="login.html" class="brand-card" aria-label="Open Creator Portal login page"><h3>Creator Portal</h3><p>Access private tools and management features.</p></a>
+        <a href="game2.html" class="brand-card" aria-label="View Knight's Quest game project"><span class="brand-card-title">Knight's Quest</span><span class="brand-card-text">Play my tile-based adventure RPG project.</span></a>
+        <a href="game3.html" class="brand-card" aria-label="View Prototype Arena game project"><span class="brand-card-title">Prototype Arena</span><span class="brand-card-text">Try an alternate game prototype in progress.</span></a>
+        <a href="login.html" class="brand-card" aria-label="Open Creator Portal login page"><span class="brand-card-title">Creator Portal</span><span class="brand-card-text">Access private tools and management features.</span></a>
       </div>
     </section>
 
