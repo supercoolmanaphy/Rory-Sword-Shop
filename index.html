@@ -110,6 +110,56 @@
       border-color: #9ca3af;
     }
 
+    .jump-button {
+      display: inline-block;
+      margin-top: 8px;
+      background-color: #111827;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .shop-section {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .shop-content {
+      padding: 20px;
+    }
+
+    .shop-nav-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      margin-right: 10px;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .shop-nav-link:last-child {
+      margin-right: 0;
+    }
+
+    .shop-nav-green { background-color: green; }
+    .shop-nav-green:hover { background-color: darkgreen; }
+    .shop-nav-bronze { background-color: #7a4e00; }
+    .shop-nav-bronze:hover { background-color: #9a6600; }
+    .shop-nav-blue { background-color: #1a4a7a; }
+    .shop-nav-blue:hover { background-color: #2a6aaa; }
+    .shop-nav-rust { background-color: #6a3a00; }
+    .shop-nav-rust:hover { background-color: #8a5200; }
+    .shop-nav-purple { background-color: #4a2060; }
+    .shop-nav-purple:hover { background-color: #6a3a80; }
+    .shop-nav-forest { background-color: #1a6a3a; }
+    .shop-nav-forest:hover { background-color: #2a8a4a; }
+
     .products {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -221,7 +271,7 @@
       <p>
         This is now my personal brand homepage. Below, you can still access my sword business as a dedicated subsection.
       </p>
-      <a href="#sword-shop" style="display:inline-block; margin-top:8px; background-color:#111827; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;">Go to Sword Shop ↓</a>
+      <a href="#sword-shop" class="jump-button">Go to Sword Shop ↓</a>
     </section>
 
     <section id="projects" class="brand-section">
@@ -233,18 +283,18 @@
       </div>
     </section>
 
-    <section id="sword-shop" class="brand-section" style="padding: 0; overflow: hidden;">
+    <section id="sword-shop" class="brand-section shop-section">
       <div class="shop-header">
         Rory's Bronze Factory
         <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
       </div>
-      <div style="padding:20px;">
-    <a href="games.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:green; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='darkgreen'" onmouseout="this.style.backgroundColor='green'">🎮 Games</a>
-    <a href="how-its-made.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#7a4e00; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#9a6600'" onmouseout="this.style.backgroundColor='#7a4e00'">🔥 How It's Made</a>
-    <a href="business-plan.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#1a4a7a; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#2a6aaa'" onmouseout="this.style.backgroundColor='#1a4a7a'">📋 Business Plan</a>
-    <a href="cogs.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#6a3a00; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#8a5200'" onmouseout="this.style.backgroundColor='#6a3a00'">💰 COGS</a>
-    <a href="history.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#4a2060; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#6a3a80'" onmouseout="this.style.backgroundColor='#4a2060'">🏛️ History</a>
-    <a href="custom-order.html" style="display:inline-block; margin-bottom:20px; background-color:#1a6a3a; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#2a8a4a'" onmouseout="this.style.backgroundColor='#1a6a3a'">💡 Custom Order</a>
+      <div class="shop-content">
+    <a href="games.html" class="shop-nav-link shop-nav-green">🎮 Games</a>
+    <a href="how-its-made.html" class="shop-nav-link shop-nav-bronze">🔥 How It's Made</a>
+    <a href="business-plan.html" class="shop-nav-link shop-nav-blue">📋 Business Plan</a>
+    <a href="cogs.html" class="shop-nav-link shop-nav-rust">💰 COGS</a>
+    <a href="history.html" class="shop-nav-link shop-nav-purple">🏛️ History</a>
+    <a href="custom-order.html" class="shop-nav-link shop-nav-forest">💡 Custom Order</a>
     <h2>Available Products</h2>
 
     <div class="products">
