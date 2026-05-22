@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="images/sword5.jpg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap">
-  <title>Rory's Bronze Factory</title>
+  <title>Rory | Personal Brand</title>
   <style>
     * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
 
@@ -15,13 +15,46 @@
       background-color: #f4f4f4;
     }
 
-    header {
+    .site-header {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      color: white;
+      padding: 28px 20px;
+      text-align: center;
+    }
+
+    .site-header h1 {
+      margin: 0 0 8px;
+      font-size: 36px;
+    }
+
+    .site-header p {
+      margin: 0 0 18px;
+      opacity: 0.9;
+    }
+
+    .site-links a {
+      display: inline-block;
+      margin: 4px 6px;
+      text-decoration: none;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .site-links a:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .shop-header {
       background-color: #333;
       color: white;
       padding: 20px;
       text-align: center;
       font-size: 30px;
       position: relative;
+      border-radius: 10px 10px 0 0;
     }
 
     .header-cart {
@@ -40,7 +73,104 @@
 
     .container {
       padding: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
     }
+
+    .brand-section {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 22px;
+      margin-bottom: 22px;
+    }
+
+    .brand-section h2 {
+      margin-top: 0;
+    }
+
+    .brand-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .brand-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px;
+      text-decoration: none;
+      color: #111827;
+      display: block;
+    }
+
+    .brand-card:hover {
+      border-color: #9ca3af;
+    }
+
+    .brand-card-title {
+      display: block;
+      margin: 0 0 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .brand-card-text {
+      display: block;
+      margin: 0;
+    }
+
+    .jump-button {
+      display: inline-block;
+      margin-top: 8px;
+      background-color: #111827;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .shop-section {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .shop-content {
+      padding: 20px;
+    }
+
+    .shop-nav-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      margin-right: 10px;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .shop-nav-link:last-child {
+      margin-right: 0;
+    }
+
+    .shop-nav-green { background-color: #008000; }
+    .shop-nav-green:hover { background-color: #006400; }
+    .shop-nav-bronze { background-color: #7a4e00; }
+    .shop-nav-bronze:hover { background-color: #9a6600; }
+    .shop-nav-blue { background-color: #1a4a7a; }
+    .shop-nav-blue:hover { background-color: #2a6aaa; }
+    .shop-nav-rust { background-color: #6a3a00; }
+    .shop-nav-rust:hover { background-color: #8a5200; }
+    .shop-nav-purple { background-color: #4a2060; }
+    .shop-nav-purple:hover { background-color: #6a3a80; }
+    .shop-nav-forest { background-color: #1a6a3a; }
+    .shop-nav-forest:hover { background-color: #2a8a4a; }
 
     .products {
       display: grid;
@@ -49,11 +179,15 @@
     }
 
     @media (max-width: 768px) {
+      .brand-grid {
+        grid-template-columns: 1fr;
+      }
+
       .products {
         grid-template-columns: 1fr;
       }
 
-      header {
+      .shop-header {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -126,25 +260,53 @@
       opacity: 0.8;
     }
 
-    h1, h2, h3, h4, h5, h6, header {
+    h1, h2, h3, h4, h5, h6, .site-header, .shop-header {
       font-family: 'Cinzel', serif;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    Rory's Bronze Factory
-    <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
+  <header class="site-header">
+    <h1>Rory</h1>
+    <p>Maker, builder, and creator.</p>
+    <div class="site-links">
+      <a href="#about">About</a>
+      <a href="#projects">Projects</a>
+      <a href="#sword-shop">Sword Shop</a>
+    </div>
   </header>
 
   <div class="container">
-    <a href="games.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:green; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='darkgreen'" onmouseout="this.style.backgroundColor='green'">🎮 Games</a>
-    <a href="how-its-made.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#7a4e00; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#9a6600'" onmouseout="this.style.backgroundColor='#7a4e00'">🔥 How It's Made</a>
-    <a href="business-plan.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#1a4a7a; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#2a6aaa'" onmouseout="this.style.backgroundColor='#1a4a7a'">📋 Business Plan</a>
-    <a href="cogs.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#6a3a00; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#8a5200'" onmouseout="this.style.backgroundColor='#6a3a00'">💰 COGS</a>
-    <a href="history.html" style="display:inline-block; margin-bottom:20px; margin-right:10px; background-color:#4a2060; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#6a3a80'" onmouseout="this.style.backgroundColor='#4a2060'">🏛️ History</a>
-    <a href="custom-order.html" style="display:inline-block; margin-bottom:20px; background-color:#1a6a3a; color:white; border:none; padding:10px 15px; border-radius:5px; font-size:16px; text-decoration:none;" onmouseover="this.style.backgroundColor='#2a8a4a'" onmouseout="this.style.backgroundColor='#1a6a3a'">💡 Custom Order</a>
+    <section id="about" class="brand-section">
+      <h2>Welcome to my personal site</h2>
+      <p>
+        This is my personal brand homepage. Below, you can still access my sword business as a dedicated subsection.
+      </p>
+      <a href="#sword-shop" class="jump-button">Go to Sword Shop ↓</a>
+    </section>
+
+    <section id="projects" class="brand-section">
+      <h2>Featured work</h2>
+      <div class="brand-grid">
+        <a href="game2.html" class="brand-card"><span class="brand-card-title">Knight's Quest</span><span class="brand-card-text">Play my tile-based adventure RPG project.</span></a>
+        <a href="game3.html" class="brand-card"><span class="brand-card-title">Prototype Arena</span><span class="brand-card-text">Try an alternate game prototype in progress.</span></a>
+        <a href="login.html" class="brand-card"><span class="brand-card-title">Creator Portal</span><span class="brand-card-text">Access private tools and management features.</span></a>
+      </div>
+    </section>
+
+    <section id="sword-shop" class="brand-section shop-section">
+      <div class="shop-header">
+        Rory's Bronze Factory
+        <a href="checkout.html" class="header-cart">🛒 Cart (<span id="cart-count">0</span>)</a>
+      </div>
+      <div class="shop-content">
+    <a href="games.html" class="shop-nav-link shop-nav-green"><span aria-hidden="true">🎮</span> Games</a>
+    <a href="how-its-made.html" class="shop-nav-link shop-nav-bronze"><span aria-hidden="true">🔥</span> How It's Made</a>
+    <a href="business-plan.html" class="shop-nav-link shop-nav-blue"><span aria-hidden="true">📋</span> Business Plan</a>
+    <a href="cogs.html" class="shop-nav-link shop-nav-rust"><span aria-hidden="true">💰</span> COGS</a>
+    <a href="history.html" class="shop-nav-link shop-nav-purple"><span aria-hidden="true">🏛️</span> History</a>
+    <a href="custom-order.html" class="shop-nav-link shop-nav-forest"><span aria-hidden="true">💡</span> Custom Order</a>
     <h2>Available Products</h2>
 
     <div class="products">
@@ -198,7 +360,8 @@
         <img src="images/Horus1.png" alt="Horus" class="coming-soon-img">
       </div>
     </div>
-
+      </div>
+    </section>
   </div>
 
   <!-- Custom Order -->
