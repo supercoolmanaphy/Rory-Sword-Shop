@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="images/sword5.jpg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
-  <title>Rory West | Home</title>
+  <title>Rory West | Free Workshops & Events</title>
   <style>
     * { cursor: url('images/cursor-sword.svg') 5 5, auto !important; }
 
@@ -62,95 +61,96 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 40px 20px 60px;
     }
 
     .hero {
       text-align: center;
-      padding: 24px;
-      background: #111827;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.45);
+      padding: 30px 26px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
     }
 
     .hero h1 {
       margin: 0 0 10px;
-      font-size: 2.4rem;
+      font-size: 2.3rem;
       font-family: 'DotGothic16', sans-serif;
       font-weight: 400;
     }
 
     .hero p {
       margin: 0;
-      color: #94a3b8;
-      font-size: 1.05rem;
+      color: #bfdbfe;
+      font-size: 1.08rem;
+      line-height: 1.6;
     }
 
     .section {
-      margin-top: 24px;
-      background: #111827;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.45);
+      margin-top: 26px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
       padding: 24px;
     }
 
     .section h2 {
-      margin-top: 0;
+      margin: 0 0 10px;
       font-family: 'DotGothic16', sans-serif;
       font-weight: 400;
     }
 
-    .section p {
-      line-height: 1.6;
-      margin-bottom: 0;
+    .section-intro {
       color: #cbd5e1;
+      margin-top: 0;
+      margin-bottom: 20px;
+      line-height: 1.6;
     }
 
-    .links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 14px;
+    .resource-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
 
-    .btn {
-      display: inline-block;
+    .resource-card {
+      display: block;
       text-decoration: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-weight: 600;
-      border: 2px solid transparent;
-      transition: 0.2s;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .btn-linkedin {
-      background: #0a66c2;
-      color: #fff;
+    .resource-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(96, 165, 250, 0.7);
+      box-shadow: 0 10px 18px rgba(15, 23, 42, 0.55);
     }
 
-    .btn-linkedin:hover {
-      background: #004182;
+    .resource-card h3 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 1.06rem;
     }
 
-    .shop-link-wrap {
-      text-align: center;
-      margin-top: 34px;
-      padding-top: 20px;
+    .resource-card p {
+      color: #cbd5e1;
+      margin: 8px 0 0;
+      line-height: 1.5;
     }
 
-    .btn-shop {
-      background: #7a4e00;
-      color: #fff;
-      border-color: #7a4e00;
-      font-family: 'Cinzel', serif;
-      font-size: 1.05rem;
-    }
-
-    .btn-shop:hover {
-      background: #5d3b00;
-      border-color: #5d3b00;
+    .resource-meta {
+      color: #7dd3fc;
+      font-size: 0.86rem;
+      margin-top: 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     @keyframes drift {
@@ -164,29 +164,39 @@
   <div class="animated-bg" aria-hidden="true"></div>
   <main class="container">
     <section class="hero">
-      <h1>Rory West</h1>
-      <p>Welcome to rorywest.org, my personal homepage.</p>
+      <h1>Free Tech & Finance Workshops</h1>
+      <p>Discover high-quality, free learning events and training resources to build your skills.</p>
     </section>
 
-    <section class="section" id="about">
-      <h2>About Me</h2>
-      <p>
-        I’m Rory, and this is where I’ll be sharing more about who I am, what I’m building, and what I’m working on.
-        This page is now dedicated to my personal site.
-      </p>
-    </section>
+    <section class="section" id="featured-workshops">
+      <h2>Featured Resources</h2>
+      <p class="section-intro">Start with these free programs focused on practical tech learning and career growth.</p>
+      <div class="resource-grid">
+        <a class="resource-card" href="https://anthropic.skilljar.com/" target="_blank" rel="noopener noreferrer">
+          <h3>Anthropic Skilljar</h3>
+          <p>Free workshops and learning paths around safe, practical AI usage and workflows.</p>
+          <div class="resource-meta">AI Workshops</div>
+        </a>
 
-    <section class="section" id="connect">
-      <h2>Connect</h2>
-      <p>You can find me on LinkedIn:</p>
-      <div class="links">
-        <a class="btn btn-linkedin" href="https://www.linkedin.com/in/rorywest" target="_blank" rel="noopener noreferrer">Visit my LinkedIn</a>
+        <a class="resource-card" href="https://developer.amd.com/amd-ai-academy/" target="_blank" rel="noopener noreferrer">
+          <h3>AMD AI Academy</h3>
+          <p>Hands-on AI learning tracks and technical events built for developers and builders.</p>
+          <div class="resource-meta">Developer Training</div>
+        </a>
+
+        <a class="resource-card" href="https://www.codedex.io/home" target="_blank" rel="noopener noreferrer">
+          <h3>Codedex</h3>
+          <p>Interactive coding lessons and beginner-friendly challenges to sharpen core programming skills.</p>
+          <div class="resource-meta">Coding Practice</div>
+        </a>
+
+        <a class="resource-card" href="https://skills.ole.redhat.com/en" target="_blank" rel="noopener noreferrer">
+          <h3>Red Hat Skills</h3>
+          <p>Free, guided courses and workshop-style labs for open-source and enterprise tech topics.</p>
+          <div class="resource-meta">Open-Source Learning</div>
+        </a>
       </div>
     </section>
-
-    <div class="shop-link-wrap">
-      <a class="btn btn-shop" href="shop.html">Enter Rory's Sword Shop</a>
-    </div>
   </main>
 
   <script src="cursor.js"></script>
